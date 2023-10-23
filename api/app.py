@@ -10,8 +10,9 @@ def hello_world():
 
 
 # @app.route("/query?q=dinosaurs", methods=["GET"])
-@app.route("/query/<q>", methods=["GET"])
-def dinosaurs(q):
+@app.route("/query/", methods=["GET"])
+def dinosaurs():
+    q = request.args.get('q')
     return process_query(q)
 
 
