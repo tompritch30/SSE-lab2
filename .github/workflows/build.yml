@@ -17,15 +17,15 @@ jobs:
 
   unit-tests:
     needs: python-formatting
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
-        - name: Run unit tests
-          run: pytest api/*.py
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run unit tests
+        run: pytest api/*.py
 
   deploy-to-vercel:
-    needs: python-formatting
+    needs: unit-tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
