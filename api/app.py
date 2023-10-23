@@ -9,9 +9,10 @@ def hello_world():
     return render_template("index.html")
 
 
-@app.route("/query?q=dinosaurs", methods=["GET"])
-def dinosaurs():
-    return process_query("dinosaurs")
+# @app.route("/query?q=dinosaurs", methods=["GET"])
+@app.route("/query/<q>", methods=["GET"])
+def dinosaurs(q):
+    return process_query(q)
 
 
 @app.route("/submit", methods=["POST"])
