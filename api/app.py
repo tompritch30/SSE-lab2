@@ -9,6 +9,11 @@ def hello_world():
     return render_template("index.html")
 
 
+@app.route("/query?q=dinosaurs", methods=["GET"])
+def dinosaurs():
+    return process_query("dinosaurs")
+
+
 @app.route("/submit", methods=["POST"])
 def submit():
     input_name = request.form.get("name")
@@ -22,3 +27,11 @@ def submit():
                            sort=input_sort,
                            acc=input_account,
                            pg=input_pg)
+
+
+def process_query(word):
+    if "dinosaurs" == word:
+        return "Dinosaurs ruled the Earth 200 million years ago"
+    if "asteroids" == word:
+        return "Unknown"
+

@@ -13,7 +13,16 @@ jobs:
       - name: Install flake8
         run: pip install flake8
       - name: Run flake8
-        run: flake8 api/
+        run: flake8 api/ #*.py
+
+  unit-tests:
+    needs: python-formatting
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+        - name: Run unit tests
+          run: pytest api/*.py
 
   deploy-to-vercel:
     needs: python-formatting
