@@ -13,8 +13,7 @@ def hello_world():
 @app.route("/query", methods=["GET"])
 def dinosaurs():
     q = request.args.get("q")
-    return process_query(q)
-
+    process_query(q)
 
 @app.route("/submit", methods=["POST"])
 def submit():
@@ -37,7 +36,7 @@ def process_query(word):
     if "dinosaurs" in word:
         return "Dinosaurs ruled the Earth 200 million years ago"
     elif "name" in word:
-        return "agiledevs"
+        return "agiledevs1"
     if "What is 84 plus 32?" in word:
         return 84+32
     if "Which of the following numbers is the largest: 37, 65, 21?" in word:
@@ -46,3 +45,5 @@ def process_query(word):
         return 42+73
     else:
         return "Unknown"
+
+
