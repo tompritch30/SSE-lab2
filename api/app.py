@@ -12,7 +12,7 @@ def hello_world():
 # @app.route("/query?q=dinosaurs", methods=["GET"])
 @app.route("/query", methods=["GET"])
 def dinosaurs():
-    q = request.args.get('q')
+    q = request.args.get("q")
     return process_query(q)
 
 
@@ -23,12 +23,14 @@ def submit():
     input_sort = request.form.get("sortcode")
     input_account = request.form.get("accountnumber")
     input_pg = request.form.get("pgnum")
-    return render_template("hello.html",
-                           name=input_name,
-                           age=input_age,
-                           sort=input_sort,
-                           acc=input_account,
-                           pg=input_pg)
+    return render_template(
+        "hello.html",
+        name=input_name,
+        age=input_age,
+        sort=input_sort,
+        acc=input_account,
+        pg=input_pg,
+    )
 
 
 def process_query(word):
