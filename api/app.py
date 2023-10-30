@@ -31,7 +31,7 @@ def submit():
 
 
 def process_query(word):
-    if "dinosaurs" == word:
+    if "dinosaurs" in word:
         return "Dinosaurs ruled the Earth 200 million years ago"
     elif "name" in word:
         return "agiledevs"
