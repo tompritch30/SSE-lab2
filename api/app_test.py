@@ -25,4 +25,7 @@ def test_does_multiplied():
 
 
 def test_does_largest():
-    assert process_query("Which of the following numbers is the largest: 38, 10, 8?") == "38"
+    assert \
+        process_query("Which of the following numbers is the largest: "
+                      "38, 10, 8?") \
+        == "38"
