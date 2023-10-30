@@ -22,3 +22,7 @@ def test_does_plus():
 
 def test_does_multiplied():
     assert process_query("What is 20 multiplied by 95?") == "1900"
+
+
+def test_does_largest():
+    assert process_query("Which of the following numbers is the largest: 38, 10, 8?") == "38"
