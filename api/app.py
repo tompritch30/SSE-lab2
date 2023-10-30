@@ -15,6 +15,7 @@ def dinosaurs():
     q = request.args.get("q")
     process_query(q)
 
+
 @app.route("/submit", methods=["POST"])
 def submit():
     input_name = request.form.get("name")
@@ -38,12 +39,10 @@ def process_query(word):
     elif "name" in word:
         return "agiledevs1"
     if "What is 84 plus 32?" in word:
-        return 84+32
+        return 84 + 32
     if "Which of the following numbers is the largest: 37, 65, 21?" in word:
         return 65
     if "What is 43 plus 73?" in word:
-        return 42+73
+        return 42 + 73
     else:
         return "Unknown"
-
-
