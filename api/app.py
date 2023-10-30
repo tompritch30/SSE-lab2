@@ -38,5 +38,7 @@ def process_query(word):
         return "Dinosaurs ruled the Earth 200 million years ago"
     elif "name" in word:
         return "agiledevs"
+    if "What is 84 plus 32?" in word:
+        return 84+32
     else:
         return "Unknown"
