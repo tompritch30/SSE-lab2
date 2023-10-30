@@ -43,5 +43,12 @@ def process_query(word):
         numbers = numbers.replace(" ", "")
         numbers = numbers.split(",")
         return str(max([int(i) for i in numbers]))
+
+    if "plus" in word:
+        numbers = word[:-1].split()
+        return str(int(numbers[2]) + int(numbers[4]))
+    if "multiplied" in word:
+        numbers = word[:-1].split()
+        return str(int(numbers[2]) * int(numbers[4]))
     else:
         return "Unknown"
