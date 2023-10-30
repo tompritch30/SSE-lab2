@@ -15,6 +15,7 @@ def dinosaurs():
     q = request.args.get('q')
     return process_query(q)
 
+
 @app.route("/submit", methods=["POST"])
 def submit():
     input_name = request.form.get("name")
