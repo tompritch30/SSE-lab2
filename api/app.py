@@ -49,6 +49,6 @@ def process_query(word):
         return str(int(numbers[2]) + int(numbers[4]))
     if "multiplied" in word:
         numbers = word[:-1].split()
-        return str(int(numbers[2]) * int(numbers[4]))
+        return str(int(numbers[2]) * int(numbers[5]))
     else:
         return "Unknown"
