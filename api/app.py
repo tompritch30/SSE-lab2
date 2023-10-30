@@ -37,7 +37,7 @@ def process_query(word):
     if "dinosaurs" in word:
         return "Dinosaurs ruled the Earth 200 million years ago"
     elif "name" in word:
-        return "agiledevs1"
+        return "agiledevs"
     if "What is 84 plus 32?" in word:
         return 84 + 32
     if "Which of the following numbers is the largest: 37, 65, 21?" in word:
