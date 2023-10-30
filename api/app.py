@@ -45,4 +45,3 @@ def process_query(word):
         return str(max([int(i) for i in numbers]))
     else:
         return "Unknown"
-
