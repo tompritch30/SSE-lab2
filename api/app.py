@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request
 
-
 app = Flask(__name__)
 
 
@@ -38,24 +37,12 @@ def process_query(word):
         return "Dinosaurs ruled the Earth 200 million years ago"
     elif "name" in word:
         return "agiledevs"
-    if "What_is_84_plus_32?" in word:
-        return 84 + 32
-    if "Which of the following numbers is the largest: 37, 65, 21?" in word:
-        return 65
-    if "What is 43 plus 73?" in word:
-        return 42 + 73
-    if "What is 32 plus 31?" in word:
-        return 63
-    if "What is 79 plus 61?" in word:
-        return 140
-    if "Which of the following numbers is the largest: 95, 56, 86?" in word:
-        return 95
-    if " 10, 5, 47?" in word:
-        return 47
-    #comment
-    if "What is 83 plus 11?" in word:
-        return 94
-    if "Which of the following numbers is the largest: 40, 30, 71?" in word:
-        return 71
+    if "largest" in word:
+        numbers = word.split(": ")[1]
+        numbers = numbers.replace("?", "")
+        numbers = numbers.replace(" ", "")
+        numbers = numbers.split(",")
+        return str(max([int(i) for i in numbers]))
     else:
         return "Unknown"
+
