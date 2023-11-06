@@ -32,6 +32,14 @@ def submit():
         pg=input_pg,
     )
 
+@app.route("/submit_github", methods=["POST"])
+def submit_github():
+    input_username = request.form.get("github_username")
+    return render_template(
+        "github_form_post.html",
+        github_username=input_username,
+    )
+
 
 def process_query(word):
     if "dinosaurs" in word:
