@@ -1,4 +1,20 @@
 <body>
 <h1>Hello {{ github_username }}!</h1>
-<h1> {{ github_repos }}!</h1>
+<h1>Your repos:</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Repo name</th>
+            <th>Last updated</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in github_repos %}
+        <tr>
+            <td>{{ entry.full_name }}</td>
+            <td>{{ entry.updated_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 </body>

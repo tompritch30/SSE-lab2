@@ -47,9 +47,6 @@ def submit_github():
                             f'{input_username}/repos')
     if response.status_code == 200:
         repos = response.json()
-    full_name_repos = []
-    for repo in repos:
-        full_name_repos = repo["full_name"]
 
     return render_template(
         "github_form_post.html",
