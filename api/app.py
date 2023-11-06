@@ -37,7 +37,7 @@ def submit():
     )
 
 
-@app.route("/submit_github_form", methods=["POST"])
+@app.route("/github_form/submit", methods=["POST"])
 def submit_github():
     input_username = request.form.get("github_username")
     return render_template(
