@@ -41,6 +41,7 @@ def submit():
 
 @app.route("/github_form/submit", methods=["POST"])
 def submit_github():
+    print("hi")
     input_username = request.form.get("github_username")
     response = requests.get(f'https://api.github.com/users/'
                             f'{input_username}/repos')
