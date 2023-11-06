@@ -32,6 +32,7 @@ def submit():
         pg=input_pg,
     )
 
+
 @app.route("/submit_github", methods=["POST"])
 def submit_github():
     input_username = request.form.get("github_username")
