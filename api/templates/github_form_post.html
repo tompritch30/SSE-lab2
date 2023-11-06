@@ -6,6 +6,7 @@
         <tr>
             <th>Repo name</th>
             <th>Last updated</th>
+            <th>Special SHA</th>
         </tr>
     </thead>
     <tbody>
@@ -13,6 +14,7 @@
         <tr>
             <td>{{ entry.full_name }}</td>
             <td>{{ entry.updated_at }}</td>
+            <td>{{ entry.special_sha }}</td>
         </tr>
         {% endfor %}
     </tbody>

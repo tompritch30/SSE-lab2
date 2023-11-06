@@ -41,12 +41,23 @@ def submit():
 
 @app.route("/github_form/submit", methods=["POST"])
 def submit_github():
-    print("hi")
     input_username = request.form.get("github_username")
     response = requests.get(f'https://api.github.com/users/'
                             f'{input_username}/repos')
     if response.status_code == 200:
         repos = response.json()
+        latest_comments = []
+
+        for repo in repos:
+            repo_commit_detaiils = (
+                requests.get(f'https://api.github.com/repos/'
+                             f'{input_username}/{repo["full_name"]}'
+                             f'/commits'))
+            if response.status_code == 200:
+                commit = response.json()
+                latest_comments.append(commit[0]["sha"])
+
+        repos["special_sha"] = latest_comments
 
     return render_template(
         "github_form_post.html",
