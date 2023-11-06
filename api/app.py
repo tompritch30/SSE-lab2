@@ -7,6 +7,10 @@ app = Flask(__name__)
 def hello_world():
     return render_template("index.html")
 
+@app.route("/github_form")
+def github_username_form():
+    return render_template("github_form.html")
+
 
 # @app.route("/query?q=dinosaurs", methods=["GET"])
 @app.route("/query", methods=["GET"])
@@ -32,7 +36,7 @@ def submit():
     )
 
 
-@app.route("/submit_github", methods=["POST"])
+@app.route("/submit_github_form", methods=["POST"])
 def submit_github():
     input_username = request.form.get("github_username")
     return render_template(
