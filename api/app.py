@@ -5,8 +5,9 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello_world():
-    q = request.args.get("q")
-    return process_query(q)
+    #q = request.args.get("q")
+    #return process_query(q)
+    return render_template("index.html")
 
 
 # @app.route("/query?q=dinosaurs", methods=["GET"])
