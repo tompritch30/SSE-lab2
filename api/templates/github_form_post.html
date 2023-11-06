@@ -9,6 +9,9 @@
                     <th>Repo name</th>
                     <th>Last updated</th>
                     <th>Special SHA</th>
+                    <th>Author</th>
+                    <th>Email</th>
+                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
@@ -17,6 +20,9 @@
                     <td>{{ entry.full_name }}</td>
                     <td>{{ entry.updated_at }}</td>
                     <td>{{ entry.special_sha or 'No SHA available' }}</td>
+                    <td>{{ entry.author_name or 'N/A' }}</td>
+                    <td>{{ entry.author_email or 'N/A' }}</td>
+                    <td>{{ entry.commit_date or 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
