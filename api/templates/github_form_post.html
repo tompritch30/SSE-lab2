@@ -1,22 +1,27 @@
 <body>
-<h1>Hello {{ github_username }}!</h1>
-<h1>Your repos:</h1>
-<table>
-    <thead>
-        <tr>
-            <th>Repo name</th>
-            <th>Last updated</th>
-            <th>Special SHA</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for entry in github_repos %}
-        <tr>
-            <td>{{ entry.full_name }}</td>
-            <td>{{ entry.updated_at }}</td>
-            <td>{{ entry.special_sha }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <h1>Hello {{ github_username }}!</h1>
+
+    {% if github_repos %}
+        <h1>Your repos:</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Repo name</th>
+                    <th>Last updated</th>
+                    <th>Special SHA</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in github_repos %}
+                <tr>
+                    <td>{{ entry.full_name }}</td>
+                    <td>{{ entry.updated_at }}</td>
+                    <td>{{ entry.special_sha or 'No SHA available' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No repositories found or an error occurred. {% if error_message %}Error: {{ error_message }}{% endif %}</p>
+    {% endif %}
 </body>

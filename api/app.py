@@ -42,28 +42,32 @@ def submit():
 @app.route("/github_form/submit", methods=["POST"])
 def submit_github():
     input_username = request.form.get("github_username")
-    response = requests.get(f'https://api.github.com/users/'
-                            f'{input_username}/repos')
+    response = requests.get(f'https://api.github.com/users/{input_username}/repos')
+
     if response.status_code == 200:
         repos = response.json()
-        latest_comments = []
-
         for repo in repos:
-            repo_commit_details = (
-                requests.get(f'https://api.github.com/repos/'
-                             f'{input_username}/{repo["full_name"]}'
-                             f'/commits'))
+            # Since repo["full_name"] includes the username, we don't need to insert the username again.
+            repo_commit_details = requests.get(f'https://api.github.com/repos/{repo["full_name"]}/commits')
+
             if repo_commit_details.status_code == 200:
-                commit = repo_commit_details.json()
-                latest_comments.append(commit[0]["sha"])
-
-        repos["special_sha"] = latest_comments
-
-    return render_template(
-        "github_form_post.html",
-        github_username=input_username,
-        github_repos=repos
-    )
+                commits = repo_commit_details.json()
+                # Safety check if the commits list is empty
+                if commits:
+                    # Assign the SHA to a new key in the repo dictionary.
+                    repo["special_sha"] = commits[0]["sha"]
+                else:
+                    repo["special_sha"] = "No commits available"
+            else:
+                repo["special_sha"] = "Error fetching commits"
+        # Pass the list of repositories with the added "special_sha" key to the template
+        return render_template("github_form_post.html", github_username=input_username, github_repos=repos)
+    else:
+        # If the status is not 200, set repos to None or handle it as you see fit
+        repos = None
+        error_message = "Failed to fetch repositories. Please check the GitHub username and try again."
+        return render_template("github_form_post.html", github_username=input_username, github_repos=repos,
+                               error_message=error_message)
 
 
 def process_query(word):
