@@ -49,12 +49,12 @@ def submit_github():
         latest_comments = []
 
         for repo in repos:
-            repo_commit_detaiils = (
+            repo_commit_details = (
                 requests.get(f'https://api.github.com/repos/'
                              f'{input_username}/{repo["full_name"]}'
                              f'/commits'))
-            if response.status_code == 200:
-                commit = response.json()
+            if repo_commit_details.status_code == 200:
+                commit = repo_commit_details.json()
                 latest_comments.append(commit[0]["sha"])
 
         repos["special_sha"] = latest_comments
