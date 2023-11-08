@@ -28,34 +28,27 @@ def dinosaurs():
 def nasa_form():
     if request.method == "POST":
         search_query = request.form.get("nasa_query")
-        # Split the URL into two lines to avoid E501 error
-        nasa_url = (
-            "https://images-api.nasa.gov/search"
-            "?q={}".format(search_query)
-        )
-        response = requests.get(nasa_url)
-
+        image_index = request.form.get("image_index", 0, type=int)
+        response = requests.get(f"https://images-api.nasa.gov/search?q={search_query}")
+        
         if response.status_code == 200:
             results = response.json()
-            # Ensure that there are items and links in the response
-            if results['collection']['items']:
-                item = results['collection']['items'][0]
+            items = results['collection']['items']
+            if items and len(items) > image_index:
+                item = items[image_index]
                 if 'links' in item and item['links']:
                     image_url = item['links'][0]['href']
-                    # Split the render_template line to avoid E501 error
                     return render_template(
-                        "nasa_image.html", image_url=image_url)
-            # Split the render_template line to avoid E501 error
-            return render_template(
-                "nasa_image.html", error="No images found.")
+                        "nasa_image.html", 
+                        image_url=image_url,
+                        search_query=search_query,
+                        image_index=image_index + 1  # Prepare the next index
+                    )
+            return render_template("nasa_image.html", error="No more images found.")
         else:
-            # Split the render_template line to avoid E501 error
-            return render_template(
-                "nasa_image.html", 
-                error="Failed to retrieve images from NASA."
-            )
-    # Split the render_template line to avoid E501 error
-    return render_template("nasa_form.html")
+            return render_template("nasa_image.html", error="Failed to retrieve images from NASA.")
+    else:
+        return render_template("nasa_form.html")
 
 
 @app.route("/submit", methods=["POST"])

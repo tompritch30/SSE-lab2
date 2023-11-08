@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <h1>The final frontier</h1>
     {% if image_url %}
         <img src="{{ image_url }}" alt="NASA Image">
+        <!-- Include a form to fetch the next image -->
+        <form action="/nasa_form" method="post">
+            <input type="hidden" name="nasa_query" value="{{ search_query }}">
+            <input type="hidden" name="image_index" value="{{ image_index }}">
+            <input type="submit" value="Get Next Image">
+        </form>
     {% else %}
-        <p>No image found for the provided query.</p>
+        <p>{{ error }}</p>
     {% endif %}
 </body>
 </html>
