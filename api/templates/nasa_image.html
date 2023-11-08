@@ -1,16 +1,54 @@
 <!DOCTYPE html>
 <html>
+<head>
+<style>
+    body {
+        background-color: #0B3D91; /* dark blue for the deep space effect */
+        color: white;
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        padding: 20px;
+    }
+    img {
+        max-width: 90%;
+        border: 5px solid #fff; /* white border for the image */
+        margin-top: 20px;
+    }
+    .button {
+        background-color: #1C7CD6; /* Lighter blue for the button */
+        color: #fff;
+        padding: 10px 20px;
+        margin: 20px 0;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .button:hover {
+        background-color: #145DA0; /* Slightly darker blue on hover */
+    }
+    .error {
+        color: #FF4136; /* Red color for error messages */
+    }
+</style>
+</head>
 <body>
-    {% if image_url %}
-        <img src="{{ image_url }}" alt="NASA Image">
-        <!-- Include a form to fetch the next image -->
-        <form action="/nasa_form" method="post">
-            <input type="hidden" name="nasa_query" value="{{ search_query }}">
-            <input type="hidden" name="image_index" value="{{ image_index }}">
-            <input type="submit" value="Get Next Image">
-        </form>
-    {% else %}
-        <p>{{ error }}</p>
-    {% endif %}
+    <div class="container">
+        {% if image_url %}
+            <h1>View from the Cosmos</h1>
+            <img src="{{ image_url }}" alt="NASA Image">
+            <!-- Include a form to fetch the next image -->
+            <form action="/nasa_form" method="post">
+                <input type="hidden" name="nasa_query" value="{{ search_query }}">
+                <input type="hidden" name="image_index" value="{{ image_index }}">
+                <input type="submit" class="button" value="Get Next Image">
+            </form>
+        {% else %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+    </div>
 </body>
 </html>
