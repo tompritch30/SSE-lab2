@@ -23,11 +23,13 @@ def dinosaurs():
     q = request.args.get("q")
     return process_query(q)
 
+
 @app.route("/nasa_form", methods=["GET", "POST"])
 def nasa_form():
     if request.method == "POST":
         search_query = request.form.get("nasa_query")
-        response = requests.get(f"https://images-api.nasa.gov/search?q={search_query}")
+        response = requests.get(
+            f"https://images-api.nasa.gov/search?q={search_query}")
         if response.status_code == 200:
             results = response.json()
             # Ensure that there are items and links in the response
@@ -35,12 +37,15 @@ def nasa_form():
                 item = results['collection']['items'][0]
                 if 'links' in item and item['links']:
                     image_url = item['links'][0]['href']
-                    return render_template("nasa_image.html", image_url=image_url)
+                    return render_template("nasa_image.html", 
+                    image_url=image_url)
             return render_template("nasa_image.html", error="No images found.")
         else:
-            return render_template("nasa_image.html", error="Failed to retrieve images from NASA.")
+            return render_template("nasa_image.html",
+             error="Failed to retrieve images from NASA.")
     else:
         return render_template("nasa_form.html")
+
 
 @app.route("/submit", methods=["POST"])
 def submit():
