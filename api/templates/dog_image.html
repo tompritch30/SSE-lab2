@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body {
+        background-color: #878787; /* dark blue for the deep space effect */
+        color: white;
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        padding: 20px;
+    }
+    img {
+        max-width: 90%;
+        border: 5px solid #fff; /* white border for the image */
+        margin-top: 20px;
+    }
+    .button {
+        background-color: #1C7CD6; /* Lighter blue for the button */
+        color: #fff;
+        padding: 10px 20px;
+        margin: 20px 0;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .button:hover {
+        background-color: #145DA0; /* Slightly darker blue on hover */
+    }
+    .error {
+        color: #FF4136; /* Red color for error messages */
+    }
+</style>
+</head>
+<body>
+    <h1>Here's a Random Dog for You!</h1>
+    <div class="container">
+        {% if image_url %}
+    <img src="{{ image_url }}" alt="Random Dog Image">
+    <form action="/dog_form" method="post">
+        <input type="submit" value="Get Another Dog Image">
+    </form>
+{% else %}
+    <p>{{ error }}</p>
+{% endif %}
+    </div>
+    <p>Want to search again? <a href="/NASA_form">Go to NASA Image Search</a>.</p>
+    <p>Or do you just love seeing GitHub commit references? <a href="/github_form">Check GitHub Commits</a>.</p>
+    
+</body>
+</html>

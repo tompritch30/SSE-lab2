@@ -16,7 +16,6 @@ def hello_world():
 def github_username_form():
     return render_template("github_form.html")
 
-
 # @app.route("/query?q=dinosaurs", methods=["GET"])
 @app.route("/query", methods=["GET"])
 def dinosaurs():
@@ -49,6 +48,29 @@ def nasa_form():
             return render_template("nasa_image.html", error="Failed to retrieve images from NASA.")
     else:
         return render_template("nasa_form.html")
+
+
+
+
+@app.route("/dog_form", methods=["GET", "POST"])
+def dog_form():
+    if request.method == "POST":
+        # Get a random dog image
+        response = requests.get("https://dog.ceo/api/breeds/image/random")
+        
+        if response.status_code == 200:
+            image_data = response.json()
+            if image_data["status"] == "success":
+                image_url = image_data["message"]
+                # Pass the image URL to the template
+                return render_template("dog_image.html", image_url=image_url)
+            else:
+                return render_template("dog_form.html", error="API status is not success.")
+        else:
+            return render_template("dog_form.html", error=f"Failed to retrieve image: HTTP status code is {response.status_code}.")
+    else:
+        # If it's not a POST request, just render the form
+        return render_template("dog_form.html")
 
 
 @app.route("/submit", methods=["POST"])
