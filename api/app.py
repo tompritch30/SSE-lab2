@@ -44,14 +44,10 @@ def nasa_form():
                     image_url = item['links'][0]['href']
                     # Split the render_template line to avoid E501 error
                     return render_template(
-                        "nasa_image.html", 
-                        image_url=image_url
-                    )
+                        "nasa_image.html", image_url=image_url)
             # Split the render_template line to avoid E501 error
             return render_template(
-                "nasa_image.html", 
-                error="No images found."
-            )
+                "nasa_image.html", error="No images found.")
         else:
             # Split the render_template line to avoid E501 error
             return render_template(
