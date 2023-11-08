@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<body>
+    {% if image_url %}
+        <img src="{{ image_url }}" alt="NASA Image">
+    {% else %}
+        <p>No image found for the provided query.</p>
+    {% endif %}
+</body>
+</html>
