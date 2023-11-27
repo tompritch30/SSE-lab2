@@ -241,9 +241,10 @@ def generate_earthquake_map():
                 fill_opacity=0.7  # Fill opacity
             ).add_to(eq_map)
 
-        # Display the map
-        eq_map.save("static/earthquake_map.html")
-        return render_template("earthquake_map_display.html")
+        # Instead of saving the map, embed it directly in the template
+        map_html = eq_map.get_root().render()
+        # Pass the HTML string to the template and use the | safe filter in Jinja2
+        return render_template("earthquake_map_display.html", map_html=map_html)  # Pass the HTML string to the template and use the | safe filter in Jinja2
     except Exception as e:
         app.logger.error(f"An error occurred: {e}")
         return f"An error occurred: {e}"
