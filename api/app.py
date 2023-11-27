@@ -312,14 +312,28 @@ def show_restaurants():
             return 'Failed to retrieve data', 500
 
         Restaurants = {}
-        for count, result in enumerate(js['results']):
-            if count >= 15:  # Limit to 15 results
-                break
+        # WILL NEED TO INCLUDE ALL OF THEM
+        # AND THEN HAVE A DICTIONARY THAT ORDERS THE RESULTS
+        # THEN FROM THAT RETURN THE TOP 15. 
+        # Collect restaurant data
+        for result in js['results']:
             name = result['name']
-            rating = result.get('rating', 'No rating')
-            rating_count = result.get('user_ratings_total', 'No rating count')
-            Restaurants[name] = (rating, rating_count)
+            rating = result.get('rating', 0)  # Default to 0 if no rating
+            rating_count = result.get('user_ratings_total', 0)  # Default to 0 if no rating count
+            Restaurants[name] = {'rating': rating, 'rating_count': rating_count}
 
+        # Convert the dictionary into a list of tuples for sorting
+        restaurant_list = [(name, details['rating'], details['rating_count']) for name, details in Restaurants.items()]
+        
+        # Sort the list by rating and then by rating count, both in descending order
+        restaurant_list.sort(key=lambda x: (x[1], x[2]), reverse=True)
+
+        # Slice to get the top 15 restaurants
+        top_restaurants = restaurant_list[:15]
+
+        # Reconstruct the dictionary with only the top 15 restaurants
+        top_restaurants_dict = {name: {'rating': rating, 'rating_count': rating_count} for name, rating, rating_count in top_restaurants}
+        
     except urllib.error.URLError as e:
         app.logger.exception("URL Error occurred")
         return jsonify({'error': str(e)}), 500
@@ -330,5 +344,5 @@ def show_restaurants():
         app.logger.exception("An unexpected error occurred")
         return jsonify({'error': str(e)}), 500
 
-    return render_template("restaurant_map.html", restaurants=Restaurants)
+    return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
     
