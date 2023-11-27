@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant Map</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        .map-container {
+            width: 600px;
+            height: 400px;
+            margin-top: 50px; /* Adjust for vertical centering */
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #ccc;
+        }
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Restaurant Places</h1>
+    <div class="map-container">
+        <iframe src="/generate_earthquake_map"></iframe>
+    </div>
+</body>
+</html>

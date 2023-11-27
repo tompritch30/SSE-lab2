@@ -182,7 +182,6 @@ def process_query(word):
 
 @app.route("/generate_earthquake_map")
 def generate_earthquake_map():
-
     try:
         # URL endpoint for the earthquake data API
         endpoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?"
@@ -248,3 +247,7 @@ def generate_earthquake_map():
     except Exception as e:
         app.logger.error(f"An error occurred: {e}")
         return f"An error occurred: {e}"
+
+@app.route("/restaurant_map")
+def restaurant_map():
+    return render_template("restaurant_map.html")
