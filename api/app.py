@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 #from flask_limiter import Limiter
 #from flask_limiter.util import get_remote_address
 from datetime import datetime
@@ -9,6 +9,7 @@ import matplotlib
 import os
 import urllib.request
 import urllib.parse
+import urllib.error
 
 import requests
 
@@ -265,8 +266,12 @@ def restaurant_map():
 #@limiter.limit("10 per minute")
 def show_restaurants():
     try: 
-        api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'default_key')  # Replace with your actual API key
-
+        api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Replace with your actual API key
+        
+        if not api_key:
+            app.logger.error("API key is empty")
+            return jsonify({'error': 'API key is empty'}), 400
+         
         address = request.args.get('address', 'London')  # Get address from query parameter
         price = request.args.get('price', '2')
         dist = int(request.args.get('dist', 1000))
@@ -315,7 +320,15 @@ def show_restaurants():
             rating_count = result.get('user_ratings_total', 'No rating count')
             Restaurants[name] = (rating, rating_count)
 
-        return render_template("restaurant_map.html", restaurants=Restaurants)
+    except urllib.error.URLError as e:
+        app.logger.exception("URL Error occurred")
+        return jsonify({'error': str(e)}), 500
+    except json.JSONDecodeError as e:
+        app.logger.exception("JSON Decode Error")
+        return jsonify({'error': 'Invalid JSON response'}), 500
     except Exception as e:
-        app.logger.exception(f"An error occurred: {e}")
-        return f"An error occurred: {e}, 500"
+        app.logger.exception("An unexpected error occurred")
+        return jsonify({'error': str(e)}), 500
+
+    return render_template("restaurant_map.html", restaurants=Restaurants)
+    
