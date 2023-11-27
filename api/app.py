@@ -252,8 +252,8 @@ def generate_earthquake_map():
         # Pass the HTML string to the template and use the | safe filter in Jinja2
         return render_template("earthquake_map_display.html", map_html=map_html)  # Pass the HTML string to the template and use the | safe filter in Jinja2
     except Exception as e:
-        app.logger.error(f"An error occurred: {e}")
-        return f"An error occurred: {e}"
+        app.logger.exception(f"An error occurred: {e}")
+        return f"An error occurred: {e}, 500"
 
 @app.route("/restaurant_map")
 def restaurant_map():
@@ -315,5 +315,5 @@ def show_restaurants():
 
         return render_template("restaurant_map.html", restaurants=Restaurants)
     except Exception as e:
-        app.logger.error(f"An error occurred: {e}")
-        return f"An error occurred: {e}"
+        app.logger.exception(f"An error occurred: {e}")
+        return f"An error occurred: {e}, 500"
