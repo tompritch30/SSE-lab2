@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+#from flask_limiter import Limiter
+#from flask_limiter.util import get_remote_address
 from datetime import datetime
 import pytz
 import folium
@@ -11,11 +11,11 @@ import os
 import requests
 
 app = Flask(__name__)
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
-)
+#limiter = Limiter(
+#    app,
+#    key_func=get_remote_address,
+#    default_limits=["200 per day", "50 per hour"]
+#)
 
 @app.route("/")
 def hello_world():
@@ -260,7 +260,7 @@ def restaurant_map():
     return render_template("restaurant_map.html")
 
 @app.route("/restaurants")
-@limiter.limit("10 per minute")
+#@limiter.limit("10 per minute")
 def show_restaurants():
     api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'default_key')  # Replace with your actual API key
 
