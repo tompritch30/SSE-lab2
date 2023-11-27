@@ -262,54 +262,58 @@ def restaurant_map():
 @app.route("/restaurants")
 #@limiter.limit("10 per minute")
 def show_restaurants():
-    api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'default_key')  # Replace with your actual API key
+    try: 
+        api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'default_key')  # Replace with your actual API key
 
-    address = request.args.get('address', 'London')  # Get address from query parameter
-    price = request.args.get('price', '2')
-    dist = int(request.args.get('dist', 1000))
-    open_q = request.args.get('open', '')
+        address = request.args.get('address', 'London')  # Get address from query parameter
+        price = request.args.get('price', '2')
+        dist = int(request.args.get('dist', 1000))
+        open_q = request.args.get('open', '')
 
-    if not address:
-        return 'No address provided', 400
+        if not address:
+            return 'No address provided', 400
 
-    serviceurl = 'https://maps.googleapis.com/maps/api/geocode/json?'
+        serviceurl = 'https://maps.googleapis.com/maps/api/geocode/json?'
 
-    parms = {'address': address, 'key': api_key}
-    url = serviceurl + urllib.parse.urlencode(parms)
+        parms = {'address': address, 'key': api_key}
+        url = serviceurl + urllib.parse.urlencode(parms)
 
-    uh = urllib.request.urlopen(url)
-    data = uh.read().decode()
-    js = json.loads(data)
+        uh = urllib.request.urlopen(url)
+        data = uh.read().decode()
+        js = json.loads(data)
 
-    if 'status' not in js or js['status'] != 'OK':
-        return 'Failed to retrieve data', 500
+        if 'status' not in js or js['status'] != 'OK':
+            return 'Failed to retrieve data', 500
 
-    lat = js['results'][0]['geometry']['location']['lat']
-    lng = js['results'][0]['geometry']['location']['lng']
+        lat = js['results'][0]['geometry']['location']['lat']
+        lng = js['results'][0]['geometry']['location']['lng']
 
-    lat_long = 'location=' + str(lat) + ',' + str(lng)
-    url_radius = '&radius=' + str(dist)
-    url_price = '&maxprice=' + str(price) if price else ''
-    url_open_status = '&opennow=' + str(open_q) if open_q else ''
+        lat_long = 'location=' + str(lat) + ',' + str(lng)
+        url_radius = '&radius=' + str(dist)
+        url_price = '&maxprice=' + str(price) if price else ''
+        url_open_status = '&opennow=' + str(open_q) if open_q else ''
 
-    url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-            + lat_long + "&keyword='restaurant'" + url_radius
-            + url_price + url_open_status + "&key=" + api_key)
+        url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+                + lat_long + "&keyword='restaurant'" + url_radius
+                + url_price + url_open_status + "&key=" + api_key)
 
-    buh = urllib.request.urlopen(url2)
-    data = buh.read().decode()
-    js = json.loads(data)
+        buh = urllib.request.urlopen(url2)
+        data = buh.read().decode()
+        js = json.loads(data)
 
-    if 'status' not in js or js['status'] != 'OK':
-        return 'Failed to retrieve data', 500
+        if 'status' not in js or js['status'] != 'OK':
+            return 'Failed to retrieve data', 500
 
-    Restaurants = {}
-    for count, result in enumerate(js['results']):
-        if count >= 15:  # Limit to 15 results
-            break
-        name = result['name']
-        rating = result.get('rating', 'No rating')
-        rating_count = result.get('user_ratings_total', 'No rating count')
-        Restaurants[name] = (rating, rating_count)
+        Restaurants = {}
+        for count, result in enumerate(js['results']):
+            if count >= 15:  # Limit to 15 results
+                break
+            name = result['name']
+            rating = result.get('rating', 'No rating')
+            rating_count = result.get('user_ratings_total', 'No rating count')
+            Restaurants[name] = (rating, rating_count)
 
-    return render_template("restaurant_map.html", restaurants=Restaurants)
+        return render_template("restaurant_map.html", restaurants=Restaurants)
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return f"An error occurred: {e}"

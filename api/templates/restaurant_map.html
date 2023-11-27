@@ -20,7 +20,9 @@
 
     <div class="restaurant-list">
         {% for name, details in restaurants.items() %}
-            <p>{{ name }} - Rating: {{ details[0] }}, Reviews: {{ details[1] }}</p>
+            <p>{{ name }} - Rating: {{ details[0]|default('No rating') }}, Reviews: {{ details[1]|default('No reviews') }}</p>
+        {% else %}
+            <p>No restaurant data available.</p>
         {% endfor %}
     </div>
 
