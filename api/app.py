@@ -311,28 +311,22 @@ def show_restaurants():
         if 'status' not in js or js['status'] != 'OK':
             return 'Failed to retrieve data', 500
 
-        Restaurants = {}
-        # WILL NEED TO INCLUDE ALL OF THEM
-        # AND THEN HAVE A DICTIONARY THAT ORDERS THE RESULTS
-        # THEN FROM THAT RETURN THE TOP 15. 
-        # Collect restaurant data
+        # Step 1: Fetch all restaurant data
+        all_restaurants = {}
         for result in js['results']:
             name = result['name']
-            rating = result.get('rating', 0)  # Default to 0 if no rating
-            rating_count = result.get('user_ratings_total', 0)  # Default to 0 if no rating count
-            Restaurants[name] = {'rating': rating, 'rating_count': rating_count}
+            rating = result.get('rating', 'No rating')
+            rating_count = result.get('user_ratings_total', 'No rating count')
 
-        # Convert the dictionary into a list of tuples for sorting
-        restaurant_list = [(name, details['rating'], details['rating_count']) for name, details in Restaurants.items()]
-        
-        # Sort the list by rating and then by rating count, both in descending order
-        restaurant_list.sort(key=lambda x: (x[1], x[2]), reverse=True)
+            # Add to dictionary only if rating and rating_count are not default values
+            if rating != 'No rating' and rating_count != 'No rating count':
+                all_restaurants[name] = (rating, rating_count)
 
-        # Slice to get the top 15 restaurants
-        top_restaurants = restaurant_list[:15]
+        # Step 2: Sort the data by the number of reviews
+        sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
 
-        # Reconstruct the dictionary with only the top 15 restaurants
-        top_restaurants_dict = {name: {'rating': rating, 'rating_count': rating_count} for name, rating, rating_count in top_restaurants}
+        # Step 3: Slice the sorted data to get only the top 15 entries
+        top_restaurants_dict = dict(list(sorted_restaurants.items())[:15])
         
     except urllib.error.URLError as e:
         app.logger.exception("URL Error occurred")
