@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request
 from datetime import datetime
 import pytz
+import folium
+import json
+import matplotlib
 
 import requests
 
@@ -175,3 +178,67 @@ def process_query(word):
         return str(int(numbers[2]) * int(numbers[5]))
     else:
         return "Unknown"
+
+
+@app.route("/generate_earthquake_map")
+def generate_earthquake_map():
+    # URL endpoint for the earthquake data API
+    endpoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?"
+
+    # Parameters for the API request
+    ps = {
+        "format": "geojson",  # Requesting data in GeoJSON format
+        "starttime": "2023-11-20",  # Start date for the earthquake data
+        "endtime": "2023-11-27",  # End date for the earthquake data
+        "minmagnitude": 4.5  # Minimum magnitude of earthquakes to retrieve
+    }
+
+    # Make an API request and get the response
+    response = requests.get(endpoint, params=ps)
+
+    # Convert the response text (JSON) into a Python dictionary
+    data_dict = json.loads(response.text)
+
+    # List to store latitude, longitude, and magnitude of each earthquake
+    lat_long_mag = []
+
+    # Loop through each earthquake in the data
+    for eq in data_dict['features']:
+        # Extract latitude, longitude, and magnitude
+        latitude = float(eq['geometry']['coordinates'][0])
+        longitude = float(eq['geometry']['coordinates'][1])
+        magnitude = float(eq['properties']['mag'])
+
+        # Append the data to the list
+        lat_long_mag.append([latitude, longitude, magnitude])
+
+    # Print the extracted data and its length
+    print(lat_long_mag)
+    print(len(lat_long_mag))
+
+    # Create a base map centered around the Pacific Ocean
+    eq_map = folium.Map(location=[0, -180], zoom_start=2)
+
+    # Define a function to get color based on earthquake magnitude
+    def get_color(magnitude):
+        # Access the colormap using the new method
+        colormap = matplotlib.colormaps['RdYlGn_r']  # Red-Yellow-Green reversed colormap
+        normed_value = (magnitude - 6.0) / 4  # Normalize the magnitude value for color mapping
+        rgba = colormap(normed_value)  # Get RGBA value from colormap
+        return matplotlib.colors.rgb2hex(rgba)  # Convert RGBA to hexadecimal color
+
+    # Loop through each point in lat_long_mag
+    for point in lat_long_mag:
+        folium.CircleMarker(
+            location=[point[1], point[0]],  # Set location (latitude, longitude)
+            popup=f'Mag: {point[2]}',  # Popup text showing the magnitude
+            radius=(point[2] ** 3) / 15.0,  # Radius of the circle, scaled by magnitude
+            color=get_color(point[2]),  # Border color of the circle
+            fill=True,  # Fill the circle
+            fill_color=get_color(point[2]),  # Fill color
+            fill_opacity=0.7  # Fill opacity
+        ).add_to(eq_map)
+
+    # Display the map
+    eq_map.save("static/earthquake_map.html")
+    return render_template("earthquake_map_display.html")
