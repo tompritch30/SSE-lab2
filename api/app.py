@@ -272,6 +272,7 @@ def show_restaurants():
             app.logger.error("API key is empty")
             return jsonify({'error': 'API key is empty'}), 400
          
+        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter
         address = request.args.get('address', 'London')  # Get address from query parameter
         price = request.args.get('price', '2')
         dist = int(request.args.get('dist', 1000))
@@ -295,13 +296,14 @@ def show_restaurants():
         lat = js['results'][0]['geometry']['location']['lat']
         lng = js['results'][0]['geometry']['location']['lng']
 
+        keyword = '&keyword=' + keyword_string
         lat_long = 'location=' + str(lat) + ',' + str(lng)
         url_radius = '&radius=' + str(dist)
         url_price = '&maxprice=' + str(price) if price else ''
         url_open_status = '&opennow=' + str(open_q) if open_q else ''
 
         url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-                + lat_long + "&keyword='restaurant'" + url_radius
+                + lat_long + keyword + url_radius
                 + url_price + url_open_status + "&key=" + api_key)
 
         buh = urllib.request.urlopen(url2)
