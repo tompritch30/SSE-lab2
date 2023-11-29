@@ -45,9 +45,9 @@
             </tr>
             {% for name, details in restaurants.items() %}
             <tr>
-                <td>{{ name }}</td>
+                <td><a href="{{ details[2]|default('#') }}" target="_blank">{{ name }}</a></td>
                 <td>{{ details[0]|default('No rating') }}</td>
-                <td>{{ details[1]|default('No reviews') }}</td>
+                <td>{{ details[1]|default('No reviews') }}</td>                
             </tr>
             {% else %}
             <tr>

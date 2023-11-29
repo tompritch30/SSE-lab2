@@ -273,6 +273,7 @@ def show_restaurants():
             return jsonify({'error': 'API key is empty'}), 400
          
         keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter
+        #this will be removed when passed the lat long
         address = request.args.get('address', 'London')  # Get address from query parameter
         price = request.args.get('price', '2')
         dist = int(request.args.get('dist', 1000))
@@ -305,6 +306,9 @@ def show_restaurants():
         url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
                 + lat_long + keyword + url_radius
                 + url_price + url_open_status + "&key=" + api_key)
+        
+        #/restaurants?keyword=restaurant&address=New+York&price=3&dist=500&open=true
+
 
         buh = urllib.request.urlopen(url2)
         data = buh.read().decode()
@@ -319,10 +323,12 @@ def show_restaurants():
             name = result['name']
             rating = result.get('rating', 'No rating')
             rating_count = result.get('user_ratings_total', 'No rating count')
+            encoded_name = urllib.parse.quote(name)  # URL encode the name
+            search_link = "https://www.google.com/search?q=" + encoded_name
 
             # Add to dictionary only if rating and rating_count are not default values
             if rating != 'No rating' and rating_count != 'No rating count':
-                all_restaurants[name] = (rating, rating_count)
+                all_restaurants[name] = (rating, rating_count, search_link)
 
         # Step 2: Sort the data by the number of reviews
         sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
