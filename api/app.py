@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 #from flask_limiter import Limiter
 #from flask_limiter.util import get_remote_address
 from datetime import datetime
@@ -190,34 +190,44 @@ def process_query(word):
         return "Unknown"
 
 
-@app.route("/generate_earthquake_map")
-def generate_map():
+def generate_map(name_lat_long):
     try:
-        # Fetch data passed from the /restaurants route
-        name_lat_long = request.args.get('data')
-        if name_lat_long:
-            name_lat_long = json.loads(name_lat_long)
-
         # Find the center of all coordinates for auto-zoom
         if name_lat_long:
             latitudes = [lat for _, lat, _ in name_lat_long]
             longitudes = [lng for _, _, lng in name_lat_long]
             avg_lat = sum(latitudes) / len(latitudes)
             avg_lng = sum(longitudes) / len(longitudes)
-            eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=12)
+            eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
         else:
             eq_map = folium.Map(location=[0, 0], zoom_start=2)
 
+        #marker_html='<i class="fa-solid fa-location-pin fa-bounce"></i>'
+        # Create a custom icon with a color and size
+        # custom_icon = folium.CustomIcon(
+        #     html=marker_html,
+        #     icon_size=(30, 30),  
+        #     prefix='fa'  
+        #     )
+
         # Loop through each restaurant data
+        #count = 1
         for name, lat, lng in name_lat_long:
             folium.Marker(
                 location=[lat, lng],
-                popup=name
+                popup=name,
+                #icon=custom_icon
+                # icon=folium.Icon(icon=count, prefix='fa')
             ).add_to(eq_map)
+            #count +=1
+        #change map style
+        folium.TileLayer('openstreetmap').add_to(eq_map)
 
-        map_html = eq_map.get_root().render()
-        return render_template("earthquake_map_display.html", map_html=map_html)
-
+        #map_html = eq_map #.get_root().render()
+        #return render_template("earthquake_map_display.html", map_html=map_html)
+        return eq_map._repr_html_()  # Return the HTML representation of the map
+  
+    
     except Exception as e:
         app.logger.exception(f"An error occurred: {e}")
         return f"An error occurred: {e}", 500
@@ -313,13 +323,15 @@ def show_restaurants():
         app.logger.exception("An unexpected error occurred")
         return jsonify({'error': str(e)}), 500
 
-    # Prepare data for map generation
-    # name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
-    # test values for map
-    name_lat_long = [ ("Savoy", 42.92, -81.29), ("Trafalgar Square", 51.51, -0.13)
-]
-    # Render the template, passing both restaurant data and map data
-    return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
+     # Prepare data for map generation
+    name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
+    #session['map_data'] = name_lat_long
+
+    # Generate map HTML here (or call a function that generates it)
+    map_html = generate_map(name_lat_long)  # assuming generate_map_html is a function that returns HTML
+
+    return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_html=map_html)
+    #return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
 
     # return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
     

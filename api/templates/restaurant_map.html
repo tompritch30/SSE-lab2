@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <!-- Include other necessary head elements -->
-        <script>
-            function generateMap() {
-                var mapData = {{ map_data | tojson | safe }};
-                // JavaScript code to generate the map using mapData
+        <style>
+            body {
+                display: flex;
+                justify-content: space-between;
             }
-            window.onload = generateMap;
-        </script>
+            .restaurant-container {
+                /* Adjust width as necessary, this gives space for the map */
+                width: 60%;
+                overflow: auto; /* Allow table to scroll if it overflows */
+            }
+            .map-container {
+                position: fixed; /* Fixed position */
+                top: 100px; /* Align to the top */
+                right: 20px; /* Align to the right */
+                width: 50%; /* Adjust width as necessary */
+                height: 100%; /* Full height */
+                overflow: auto; /* Allow map to scroll if it overflows */
+            }
+            
+        </style>
     </head>
 <body>
     <div class="restaurant-container">
@@ -18,12 +30,14 @@
                 <th>Name</th>
                 <th>Rating</th>
                 <th>Reviews</th>
+                
             </tr>
             {% for name, details in restaurants.items() %}
             <tr>
                 <td><a href="{{ details[2]|default('#') }}" target="_blank">{{ name }}</a></td>
                 <td>{{ details[0]|default('No rating') }}</td>
-                <td>{{ details[1]|default('No reviews') }}</td>                
+                <td>{{ details[1]|default('No reviews') }}</td>           
+                    
             </tr>
             {% else %}
             <tr>
@@ -34,7 +48,8 @@
     </div>
     
     <div class="map-container">
-        <iframe src="/generate_earthquake_map"></iframe>
+        <!-- Directly display the map HTML -->
+        {{ map_html | safe }}
     </div>
 </body>
 </html>
