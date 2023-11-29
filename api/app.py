@@ -314,8 +314,10 @@ def show_restaurants():
         return jsonify({'error': str(e)}), 500
 
     # Prepare data for map generation
-    name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
-
+    # name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
+    # test values for map
+    name_lat_long = [ ("Savoy", 42.92, -81.29), ("Trafalgar Square", 51.51, -0.13)
+]
     # Render the template, passing both restaurant data and map data
     return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
 
