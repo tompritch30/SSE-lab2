@@ -191,72 +191,37 @@ def process_query(word):
 
 
 @app.route("/generate_earthquake_map")
-def generate_earthquake_map():
+def generate_map():
     try:
-        # URL endpoint for the earthquake data API
-        endpoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?"
+        # Fetch data passed from the /restaurants route
+        name_lat_long = request.args.get('data')
+        if name_lat_long:
+            name_lat_long = json.loads(name_lat_long)
 
-        # Parameters for the API request
-        ps = {
-            "format": "geojson",  # Requesting data in GeoJSON format
-            "starttime": "2023-11-20",  # Start date for the earthquake data
-            "endtime": "2023-11-27",  # End date for the earthquake data
-            "minmagnitude": 4.5  # Minimum magnitude of earthquakes to retrieve
-        }
+        # Find the center of all coordinates for auto-zoom
+        if name_lat_long:
+            latitudes = [lat for _, lat, _ in name_lat_long]
+            longitudes = [lng for _, _, lng in name_lat_long]
+            avg_lat = sum(latitudes) / len(latitudes)
+            avg_lng = sum(longitudes) / len(longitudes)
+            eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=12)
+        else:
+            eq_map = folium.Map(location=[0, 0], zoom_start=2)
 
-        # Make an API request and get the response
-        response = requests.get(endpoint, params=ps)
-
-        # Convert the response text (JSON) into a Python dictionary
-        data_dict = json.loads(response.text)
-
-        # List to store latitude, longitude, and magnitude of each earthquake
-        lat_long_mag = []
-
-        # Loop through each earthquake in the data
-        for eq in data_dict['features']:
-            # Extract latitude, longitude, and magnitude
-            latitude = float(eq['geometry']['coordinates'][0])
-            longitude = float(eq['geometry']['coordinates'][1])
-            magnitude = float(eq['properties']['mag'])
-
-            # Append the data to the list
-            lat_long_mag.append([latitude, longitude, magnitude])
-
-        # Print the extracted data and its length
-        #print(lat_long_mag)
-        #print(len(lat_long_mag))
-
-        # Create a base map centered around the Pacific Ocean
-        eq_map = folium.Map(location=[0, -180], zoom_start=2)
-
-        # Define a function to get color based on earthquake magnitude
-        def get_color(magnitude):
-            # Access the colormap using the new method
-            colormap = matplotlib.colormaps['RdYlGn_r']  # Red-Yellow-Green reversed colormap
-            normed_value = (magnitude - 6.0) / 4  # Normalize the magnitude value for color mapping
-            rgba = colormap(normed_value)  # Get RGBA value from colormap
-            return matplotlib.colors.rgb2hex(rgba)  # Convert RGBA to hexadecimal color
-
-        # Loop through each point in lat_long_mag
-        for point in lat_long_mag:
-            folium.CircleMarker(
-                location=[point[1], point[0]],  # Set location (latitude, longitude)
-                popup=f'Mag: {point[2]}',  # Popup text showing the magnitude
-                radius=(point[2] ** 3) / 15.0,  # Radius of the circle, scaled by magnitude
-                color=get_color(point[2]),  # Border color of the circle
-                fill=True,  # Fill the circle
-                fill_color=get_color(point[2]),  # Fill color
-                fill_opacity=0.7  # Fill opacity
+        # Loop through each restaurant data
+        for name, lat, lng in name_lat_long:
+            folium.Marker(
+                location=[lat, lng],
+                popup=name
             ).add_to(eq_map)
 
-        # Instead of saving the map, embed it directly in the template
         map_html = eq_map.get_root().render()
-        # Pass the HTML string to the template and use the | safe filter in Jinja2
-        return render_template("earthquake_map_display.html", map_html=map_html)  # Pass the HTML string to the template and use the | safe filter in Jinja2
+        return render_template("earthquake_map_display.html", map_html=map_html)
+
     except Exception as e:
         app.logger.exception(f"An error occurred: {e}")
-        return f"An error occurred: {e}, 500"
+        return f"An error occurred: {e}", 500
+
 
 @app.route("/restaurant_map")
 def restaurant_map():
@@ -325,10 +290,12 @@ def show_restaurants():
             rating_count = result.get('user_ratings_total', 'No rating count')
             encoded_name = urllib.parse.quote(name)  # URL encode the name
             search_link = "https://www.google.com/search?q=" + encoded_name
+            rest_lat = result.get('geometry', {}).get('location', {}).get('lat', 0)
+            rest_long = result.get('geometry', {}).get('location', {}).get('lng', 0)
 
             # Add to dictionary only if rating and rating_count are not default values
             if rating != 'No rating' and rating_count != 'No rating count':
-                all_restaurants[name] = (rating, rating_count, search_link)
+                all_restaurants[name] = (rating, rating_count, search_link, rest_lat, rest_long)
 
         # Step 2: Sort the data by the number of reviews
         sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
@@ -346,5 +313,78 @@ def show_restaurants():
         app.logger.exception("An unexpected error occurred")
         return jsonify({'error': str(e)}), 500
 
-    return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
+    # Prepare data for map generation
+    name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
+
+    # Render the template, passing both restaurant data and map data
+    return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
+
+    # return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
     
+# @app.route("/generate_earthquake_map")
+# def generate_earthquake_map():
+#     try:
+#         # URL endpoint for the earthquake data API
+#         endpoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?"
+
+#         # Parameters for the API request
+#         ps = {
+#             "format": "geojson",  # Requesting data in GeoJSON format
+#             "starttime": "2023-11-20",  # Start date for the earthquake data
+#             "endtime": "2023-11-27",  # End date for the earthquake data
+#             "minmagnitude": 4.5  # Minimum magnitude of earthquakes to retrieve
+#         }
+
+#         # Make an API request and get the response
+#         response = requests.get(endpoint, params=ps)
+
+#         # Convert the response text (JSON) into a Python dictionary
+#         data_dict = json.loads(response.text)
+
+#         # List to store latitude, longitude, and magnitude of each earthquake
+#         lat_long_mag = []
+
+#         # Loop through each earthquake in the data
+#         for eq in data_dict['features']:
+#             # Extract latitude, longitude, and magnitude
+#             latitude = float(eq['geometry']['coordinates'][0])
+#             longitude = float(eq['geometry']['coordinates'][1])
+#             magnitude = float(eq['properties']['mag'])
+
+#             # Append the data to the list
+#             lat_long_mag.append([latitude, longitude, magnitude])
+
+#         # Print the extracted data and its length
+#         #print(lat_long_mag)
+#         #print(len(lat_long_mag))
+
+#         # Create a base map centered around the Pacific Ocean
+#         eq_map = folium.Map(location=[0, -180], zoom_start=2)
+
+#         # Define a function to get color based on earthquake magnitude
+#         def get_color(magnitude):
+#             # Access the colormap using the new method
+#             colormap = matplotlib.colormaps['RdYlGn_r']  # Red-Yellow-Green reversed colormap
+#             normed_value = (magnitude - 6.0) / 4  # Normalize the magnitude value for color mapping
+#             rgba = colormap(normed_value)  # Get RGBA value from colormap
+#             return matplotlib.colors.rgb2hex(rgba)  # Convert RGBA to hexadecimal color
+
+#         # Loop through each point in lat_long_mag
+#         for point in lat_long_mag:
+#             folium.CircleMarker(
+#                 location=[point[1], point[0]],  # Set location (latitude, longitude)
+#                 popup=f'Mag: {point[2]}',  # Popup text showing the magnitude
+#                 radius=(point[2] ** 3) / 15.0,  # Radius of the circle, scaled by magnitude
+#                 color=get_color(point[2]),  # Border color of the circle
+#                 fill=True,  # Fill the circle
+#                 fill_color=get_color(point[2]),  # Fill color
+#                 fill_opacity=0.7  # Fill opacity
+#             ).add_to(eq_map)
+
+#         # Instead of saving the map, embed it directly in the template
+#         map_html = eq_map.get_root().render()
+#         # Pass the HTML string to the template and use the | safe filter in Jinja2
+#         return render_template("earthquake_map_display.html", map_html=map_html)  # Pass the HTML string to the template and use the | safe filter in Jinja2
+#     except Exception as e:
+#         app.logger.exception(f"An error occurred: {e}")
+#         return f"An error occurred: {e}, 500"
