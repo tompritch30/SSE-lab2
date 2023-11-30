@@ -346,11 +346,11 @@ def show_restaurants():
                 place_details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_phone_number,website,editorial_summary&key=" + api_key
                 response = requests.get(place_details_url)
                 place_details_data = response.json()
-                with open('place_details_response.json', 'w') as json_file:
-                        json.dump(place_details_data, json_file, indent=4)
+                # with open('place_details_response.json', 'w') as json_file:
+                #         json.dump(place_details_data, json_file, indent=4)
 
-                     # Print the JSON response (optional)
-                print(json.dumps(place_details_data, indent=4))
+                #      # Print the JSON response (optional)
+                # print(json.dumps(place_details_data, indent=4))
 
                 if place_details_data.get('status') == 'OK':                    
                     result = place_details_data.get('result', {})
