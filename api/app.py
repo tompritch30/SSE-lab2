@@ -198,6 +198,7 @@ def generate_map(name_lat_long):
             longitudes = [lng for _, _, lng in name_lat_long]
             avg_lat = sum(latitudes) / len(latitudes)
             avg_lng = sum(longitudes) / len(longitudes)
+            # change the lat long into the lat long of the place passing in
             eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
         else:
             eq_map = folium.Map(location=[0, 0], zoom_start=2)
@@ -241,18 +242,18 @@ def restaurant_map():
 #@limiter.limit("10 per minute")
 def show_restaurants():
     try: 
+        # Will need to take in place ID
+        # https://developers.google.com/maps/documentation/geocoding/requests-places-geocoding
+        # this will get the lat long to the search
+
+        # will need to change the key name
         api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Replace with your actual API key
         
         if not api_key:
             app.logger.error("API key is empty")
             return jsonify({'error': 'API key is empty'}), 400
-         
-        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter
-        #this will be removed when passed the lat long
+
         address = request.args.get('address', 'London')  # Get address from query parameter
-        price = request.args.get('price', '2')
-        dist = int(request.args.get('dist', 1000))
-        open_q = request.args.get('open', '')
 
         if not address:
             return 'No address provided', 400
@@ -268,6 +269,13 @@ def show_restaurants():
 
         if 'status' not in js or js['status'] != 'OK':
             return 'Failed to retrieve data', 500
+        
+        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter
+        #this will be removed when passed the lat long
+        
+        price = request.args.get('price', '2')
+        dist = int(request.args.get('dist', 1000))
+        open_q = request.args.get('open', '')
 
         lat = js['results'][0]['geometry']['location']['lat']
         lng = js['results'][0]['geometry']['location']['lng']
@@ -277,6 +285,11 @@ def show_restaurants():
         url_radius = '&radius=' + str(dist)
         url_price = '&maxprice=' + str(price) if price else ''
         url_open_status = '&opennow=' + str(open_q) if open_q else ''
+        # need image of the place
+        # need place_id of each place
+
+        # will need url3! for the place details API
+        #https://developers.google.com/maps/documentation/places/web-service/details
 
         url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
                 + lat_long + keyword + url_radius
@@ -293,7 +306,7 @@ def show_restaurants():
             return 'Failed to retrieve data', 500
 
         # Step 1: Fetch all restaurant data
-        all_restaurants = {}
+        all_restaurants = {}        
         for result in js['results']:
             name = result['name']
             rating = result.get('rating', 'No rating')
@@ -303,15 +316,59 @@ def show_restaurants():
             rest_lat = result.get('geometry', {}).get('location', {}).get('lat', 0)
             rest_long = result.get('geometry', {}).get('location', {}).get('lng', 0)
 
+            photo_reference = result.get('photos', [{}])[0].get('photo_reference', None)
+            place_id = result.get('place_id', None)
+            
             # Add to dictionary only if rating and rating_count are not default values
             if rating != 'No rating' and rating_count != 'No rating count':
-                all_restaurants[name] = (rating, rating_count, search_link, rest_lat, rest_long)
+                all_restaurants[name] = (rating, rating_count, search_link, rest_lat, rest_long, photo_reference, place_id)
 
         # Step 2: Sort the data by the number of reviews
         sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
 
         # Step 3: Slice the sorted data to get only the top 15 entries
         top_restaurants_dict = dict(list(sorted_restaurants.items())[:15])
+
+        # Step 3: Fetch photo URLs for the top 15 restaurants
+        # to prevent accidental codes
+        # Fetch photo URLs for the top 15 restaurants
+        
+        # Step 4: Fetch additional details for the top 15 restaurants
+        counter = 0
+        max_requests = 15
+
+        for name, details in top_restaurants_dict.items():
+            if counter >= max_requests:
+                break
+
+            place_id = details[6]  # Assuming place_id is at index 6
+            if place_id:
+                place_details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_phone_number,website,editorial_summary&key=" + api_key
+                response = requests.get(place_details_url)
+                place_details_data = response.json()
+                with open('place_details_response.json', 'w') as json_file:
+                        json.dump(place_details_data, json_file, indent=4)
+
+                     # Print the JSON response (optional)
+                print(json.dumps(place_details_data, indent=4))
+
+                if place_details_data.get('status') == 'OK':                    
+                    result = place_details_data.get('result', {})
+                    formatted_phone_number = result.get('formatted_phone_number', 'Phone number not found')
+                    website = result.get('website', details[2])
+                    editorial_summary_overview = result.get('editorial_summary', {}).get('overview', 'Editorial summary not found')
+                    
+                    photo_reference = details[5]  # Assuming photo_reference is at index 5
+                    photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key=" + api_key if photo_reference else 'Image not found'
+
+                    updated_details = (details[0], details[1], website, details[3], details[4], photo_url, details[6], formatted_phone_number, editorial_summary_overview)
+                
+                    top_restaurants_dict[name] = updated_details
+
+            counter += 1
+
+        
+
         
     except urllib.error.URLError as e:
         app.logger.exception("URL Error occurred")

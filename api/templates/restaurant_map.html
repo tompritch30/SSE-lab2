@@ -1,55 +1,59 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <style>
-            body {
-                display: flex;
-                justify-content: space-between;
-            }
-            .restaurant-container {
-                /* Adjust width as necessary, this gives space for the map */
-                width: 60%;
-                overflow: auto; /* Allow table to scroll if it overflows */
-            }
-            .map-container {
-                position: fixed; /* Fixed position */
-                top: 100px; /* Align to the top */
-                right: 20px; /* Align to the right */
-                width: 50%; /* Adjust width as necessary */
-                height: 100%; /* Full height */
-                overflow: auto; /* Allow map to scroll if it overflows */
-            }
-            
-        </style>
-    </head>
-<body>
-    <div class="restaurant-container">
-        <h1>Restaurant Places</h1>
-        <table class="restaurant-table">
-            <tr>
-                <th>Name</th>
-                <th>Rating</th>
-                <th>Reviews</th>
-                
-            </tr>
-            {% for name, details in restaurants.items() %}
-            <tr>
-                <td><a href="{{ details[2]|default('#') }}" target="_blank">{{ name }}</a></td>
-                <td>{{ details[0]|default('No rating') }}</td>
-                <td>{{ details[1]|default('No reviews') }}</td>           
-                    
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="3">No restaurant data available.</td>
-            </tr>
-            {% endfor %}
-        </table>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='dist/css/output.css') }}" rel="stylesheet">
+    <title>Restaurant Places</title>
+    <style>
+        .star-rating {
+            display: inline-block;
+        }
+        .star-rating::before {
+            content: '★★★★★';
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #fc0 calc(var(--rating) / 5 * 100%), #ddd calc(var(--rating) / 5 * 100%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row">
+
+    <div class="flex-grow space-y-4 p-4 md:w-3/5">
+        <h1 class="text-3xl font-bold underline text-left my-5">Restaurant Places</h1>
+        {% for name, details in restaurants.items() %}
+            <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="flex items-center h-32">
+                    {% if details[5] %}        
+                    <img class="w-full md:w-48 object-cover rounded-lg" src="{{ details[5] }}" alt="Photo of {{ name }}" style="max-height: 100%;">
+                    {% endif %}
+                </div>
+                <div class="p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
+                            <a href="{{ details[2] }}" target="_blank">{{ name }}</a>
+                        </div>
+                        
+                        <div class="star-rating" style="--rating: {{ details[0]|default(0) }};"></div>
+                        <p class="text-gray-500 mt-2">{{ details[8]|default('Description not available') }}</p>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-lg font-semibold text-blue-800">{{ details[0]|default('No rating') }}</span>
+                        <span class="text-xs text-gray-600">{{ details[1]|default('0') }} reviews</span>
+                        <span class="text-xs text-gray-600">{{ details[7]|default('Phone number not available') }}</span>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p>No restaurant data available.</p>
+        {% endfor %}
     </div>
-    
-    <div class="map-container">
-        <!-- Directly display the map HTML -->
+
+    <div class="map-container sticky top-0 h-screen">
         {{ map_html | safe }}
     </div>
+
 </body>
 </html>
+
