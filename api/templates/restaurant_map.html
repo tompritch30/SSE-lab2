@@ -18,10 +18,25 @@
         }
     </style>
 </head>
-<body class="flex flex-col md:flex-row">
-
-    <div class="flex-grow space-y-4 p-4 md:w-3/5">
+<body class="flex flex-col md:flex-row">        
+    <!-- Restaurants Container -->
+    <div id="restaurants-container" class="flex-grow space-y-4 p-4 md:w-3/5">
         <h1 class="text-3xl font-bold underline text-left my-5">Restaurant Places</h1>
+        <!-- Map View Button -->
+        <button onclick="showMapView()" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">
+            Map View
+        </button>
+        <!-- Distance Slider -->
+        <div class="flex items-center">
+            <label for="distance" class="block text-sm font-medium text-gray-700 mr-4">
+            Distance
+            </label>
+            <input type="range" id="distance" name="distance" min="0" max="100" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+            <div id="distanceValue" class="text-sm font-medium text-gray-700 ml-4">
+            10 miles
+            </div>
+        </div>
+        <!-- Restaurants Listing -->
         {% for name, details in restaurants.items() %}
             <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden">
                 <div class="flex items-center h-32">
@@ -50,9 +65,34 @@
         {% endfor %}
     </div>
 
-    <div class="map-container sticky top-0 h-screen">
+    <!-- Map Container -->
+    <div id="map-container" class="hidden fixed inset-0">
+        <div class="bg-white p-4 text-left">
+            <button onclick="hideMapView()" class="text-lg font-semibold">Close Window</button>
+        </div>
         {{ map_html | safe }}
     </div>
+
+    <script>
+        function showMapView() {
+            document.getElementById('map-container').classList.remove('hidden');
+            document.getElementById('restaurants-container').classList.add('hidden');
+        }
+
+        function hideMapView() {
+            document.getElementById('map-container').classList.add('hidden');
+            document.getElementById('restaurants-container').classList.remove('hidden');
+        }
+
+        // JS for distance slider...
+        const distanceSlider = document.getElementById('distance');
+        const distanceValue = document.getElementById('distanceValue');
+        distanceSlider.oninput = function() {
+            distanceValue.textContent = this.value + ' miles';
+        }
+    </script>
+    
+        
 
 </body>
 </html>

@@ -189,49 +189,99 @@ def process_query(word):
     else:
         return "Unknown"
 
-
-def generate_map(name_lat_long):
+def generate_map(restaurant_data):
     try:
-        # Find the center of all coordinates for auto-zoom
-        if name_lat_long:
-            latitudes = [lat for _, lat, _ in name_lat_long]
-            longitudes = [lng for _, _, lng in name_lat_long]
-            avg_lat = sum(latitudes) / len(latitudes)
-            avg_lng = sum(longitudes) / len(longitudes)
-            # change the lat long into the lat long of the place passing in
-            eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
-        else:
-            eq_map = folium.Map(location=[0, 0], zoom_start=2)
+        # Center the map by calculating the average latitude and longitude
+        latitudes = [data['lat'] for data in restaurant_data]
+        longitudes = [data['lng'] for data in restaurant_data]
+        avg_lat = sum(latitudes) / len(latitudes)
+        avg_lng = sum(longitudes) / len(longitudes)
+        eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
 
-        #marker_html='<i class="fa-solid fa-location-pin fa-bounce"></i>'
-        # Create a custom icon with a color and size
-        # custom_icon = folium.CustomIcon(
-        #     html=marker_html,
-        #     icon_size=(30, 30),  
-        #     prefix='fa'  
-        #     )
+        for data in restaurant_data:
+            # Create the HTML for the popup
+            # popup_html = f"""
+            # <div class='p-4 max-w-sm rounded overflow-hidden shadow-lg'>
+            # <img class='w-full' src='{data['image_url']}' alt='Restaurant Image'>
+            # <div class='px-6 py-4'>
+            #     <div class='font-bold text-xl mb-2'><a href='{data['website_url']}' target='_blank'>{data['name']}</a></div>
+            # </div>            
+            # </div>
+            # """
+            # iframe = folium.IFrame(popup_html, width=150, height=200)
+            # popup = folium.Popup(iframe, max_width=150)
 
-        # Loop through each restaurant data
-        #count = 1
-        for name, lat, lng in name_lat_long:
+            popup_html = f"""
+                <div style='min-width: 200px; max-width: 250px; padding: 1rem; background-color: white; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);'>
+                    <img style='width: 100%; height: auto; border-radius: 0.25rem;' src='{data['image_url']}' alt='Restaurant Image'>
+                    <div style='margin-top: 0.5rem;'>
+                        <div style='font-weight: 600; font-size: 1.25rem; line-height: 1.75rem; color: #4338ca;'>
+                            <a href='{data['website_url']}' target='_blank' style='text-decoration: none; color: #4338ca;'>{data['name']}</a>
+                        </div>
+                    </div>
+                    <div style='text-align: right; margin-top: 0.5rem;'>
+                        <span style='font-weight: 700; font-size: 1rem; color: #475569;'>{data['ratings']}/5</span>
+                    </div>
+                </div>
+            """
+            iframe = folium.IFrame(popup_html, width=150, height=200)
+            popup = folium.Popup(iframe, max_width=150)
+
+            # Create and add a marker to the map
             folium.Marker(
-                location=[lat, lng],
-                popup=name,
-                #icon=custom_icon
-                # icon=folium.Icon(icon=count, prefix='fa')
+                location=[data['lat'], data['lng']],
+                tooltip=data['name'],
+                popup=folium.Popup(popup_html, max_width=300)
             ).add_to(eq_map)
-            #count +=1
-        #change map style
-        folium.TileLayer('openstreetmap').add_to(eq_map)
-
-        #map_html = eq_map #.get_root().render()
-        #return render_template("earthquake_map_display.html", map_html=map_html)
+        
         return eq_map._repr_html_()  # Return the HTML representation of the map
-  
-    
+
     except Exception as e:
         app.logger.exception(f"An error occurred: {e}")
         return f"An error occurred: {e}", 500
+
+# def generate_map(name_lat_long):
+#     try:
+#         # Find the center of all coordinates for auto-zoom
+#         if name_lat_long:
+#             latitudes = [lat for _, lat, _ in name_lat_long]
+#             longitudes = [lng for _, _, lng in name_lat_long]
+#             avg_lat = sum(latitudes) / len(latitudes)
+#             avg_lng = sum(longitudes) / len(longitudes)
+#             # change the lat long into the lat long of the place passing in
+#             eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
+#         else:
+#             eq_map = folium.Map(location=[0, 0], zoom_start=2)
+
+#         #marker_html='<i class="fa-solid fa-location-pin fa-bounce"></i>'
+#         # Create a custom icon with a color and size
+#         # custom_icon = folium.CustomIcon(
+#         #     html=marker_html,
+#         #     icon_size=(30, 30),  
+#         #     prefix='fa'  
+#         #     )
+
+#         # Loop through each restaurant data
+#         #count = 1
+#         for name, lat, lng in name_lat_long:
+#             folium.Marker(
+#                 location=[lat, lng],
+#                 popup=name,
+#                 #icon=custom_icon
+#                 # icon=folium.Icon(icon=count, prefix='fa')
+#             ).add_to(eq_map)
+#             #count +=1
+#         #change map style
+#         folium.TileLayer('openstreetmap').add_to(eq_map)
+
+#         #map_html = eq_map #.get_root().render()
+#         #return render_template("earthquake_map_display.html", map_html=map_html)
+#         return eq_map._repr_html_()  # Return the HTML representation of the map
+  
+    
+#     except Exception as e:
+#         app.logger.exception(f"An error occurred: {e}")
+#         return f"An error occurred: {e}", 500
 
 
 @app.route("/restaurant_map")
@@ -381,11 +431,22 @@ def show_restaurants():
         return jsonify({'error': str(e)}), 500
 
      # Prepare data for map generation
-    name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
+    #name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
+    restaurant_data = [
+    {
+        'name': name,
+        'lat': details[3],
+        'lng': details[4],
+        'website_url': details[2],
+        'image_url': details[5], 
+        'ratings' : details[0]
+    }
+    for name, details in top_restaurants_dict.items()
+    ]
     #session['map_data'] = name_lat_long
 
     # Generate map HTML here (or call a function that generates it)
-    map_html = generate_map(name_lat_long)  # assuming generate_map_html is a function that returns HTML
+    map_html = generate_map(restaurant_data)  # assuming generate_map_html is a function that returns HTML
 
     return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_html=map_html)
     #return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
