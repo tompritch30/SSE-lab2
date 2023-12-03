@@ -30,38 +30,40 @@
     <div id="restaurants-container" class="flex-grow space-y-4 p-4 md:w-4/5 mx-auto">
         <h1 class="title-style my-5">{{ search_details['keyword']|capitalize }}'s near to {{ search_details['address'] }}</h1>
         <!-- Filter Container -->
-        <div class="inline-flex justify-center items-center bg-white p-3 rounded-lg shadow mx-auto">
-            <!-- Map View Button -->
-            <button onclick="showMapView()" class="bg-blue-500 text-white px-4 py-2 rounded mr-4 transition duration-300 ease-in-out hover:bg-blue-600">
-                Map View
-            </button>
-            <!-- Distance Slider -->
-            <div class="flex items-center space-x-2">
-                <label for="distance" class="text-sm font-medium text-gray-700">
-                    Distance:
-                </label>
-                <input type="range" id="distance" name="distance" min="0" max="15" value="2" class="w-auto h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer transition duration-300 ease-in-out flex-1">
-                <div id="distanceValue" class="text-sm font-medium text-gray-700">
-                    2 kilometers    
+        <div class="flex justify-center">         
+            <div class="inline-flex justify-center items-center bg-white p-3 rounded-lg shadow mx-auto">
+                <!-- Map View Button -->
+                <button onclick="showMapView()" class="bg-blue-500 text-white px-4 py-2 rounded mr-4 transition duration-300 ease-in-out hover:bg-blue-600">
+                    Map View
+                </button>
+                <!-- Distance Slider -->
+                <div class="flex items-center space-x-2">
+                    <label for="distance" class="text-sm font-medium text-gray-700">
+                        Distance:
+                    </label>
+                    <input type="range" id="distance" name="distance" min="0" max="15" value="2" class="w-auto h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer transition duration-300 ease-in-out flex-1">
+                    <div id="distanceValue" class="text-sm font-medium text-gray-700">
+                        2 kilometers    
+                    </div>
+                </div>              
+
+                <!-- Price Indicator -->
+                <div id="priceIndicator" class="flex mr-4">
+                    {% for i in range(4) %}
+                    <span onclick="togglePrice({{ i+1 }})" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">&#163;</span>
+                    {% endfor %}
                 </div>
-            </div>              
 
-            <!-- Price Indicator -->
-            <div id="priceIndicator" class="flex mr-4">
-                {% for i in range(4) %}
-                <span onclick="togglePrice({{ i+1 }})" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">&#163;</span>
-                {% endfor %}
+                <!-- Type Indicator -->
+                <div id="typeIndicator" class="flex mr-4">
+                    <span onclick="toggleType('cafe')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Cafe</span>
+                    <span onclick="toggleType('pub')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Pub</span>
+                    <span onclick="toggleType('restaurant')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Restaurant</span>
+                </div>
+
+                <!-- Go Button -->
+                <button onclick="submitRequest()" class="px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 transition duration-300 ease-in-out">Go</button>
             </div>
-
-            <!-- Type Indicator -->
-            <div id="typeIndicator" class="flex mr-4">
-                <span onclick="toggleType('cafe')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Cafe</span>
-                <span onclick="toggleType('pub')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Pub</span>
-                <span onclick="toggleType('restaurant')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Restaurant</span>
-            </div>
-
-            <!-- Go Button -->
-            <button onclick="submitRequest()" class="px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 transition duration-300 ease-in-out">Go</button>
         </div>
         
         <!-- Restaurants Listing -->
@@ -138,20 +140,14 @@
         // Function to handle type selection
         let selectedType = null;
         function toggleType(type) {
-            console.log('Toggling type:', type); // Debugging log
-            if (selectedType === type) {
-                selectedType = null;
-            } else {
-                selectedType = type;
-            }
+            selectedType = selectedType === type ? null : type;
             document.querySelectorAll('#typeIndicator span').forEach(span => {
-                const isType = span.textContent.toLowerCase() === type;
-                span.classList.toggle('text-blue-600', isType && selectedType === type);
-                console.log('Is type:', isType, ' | Text:', span.textContent); // Debugging log
-            });
+            const isActive = span.textContent.toLowerCase() === selectedType;
+            span.classList.toggle('text-blue-600', isActive);
+            span.classList.toggle('text-gray-400', !isActive);
+        });           
         }
 
-        // Placeholder function for Go button
         function submitRequest() {
             // Retrieve current values from URL
             var currentParams = new URLSearchParams(window.location.search);

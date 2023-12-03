@@ -189,7 +189,7 @@ def process_query(word):
     else:
         return "Unknown"
 
-def generate_map(restaurant_data, to_do_lat, to_do_long):
+def generate_map(restaurant_data, to_do_lat, to_do_long, radius):
     try:
         # Center the map by calculating the average latitude and longitude
         latitudes = [data['lat'] for data in restaurant_data]
@@ -209,15 +209,15 @@ def generate_map(restaurant_data, to_do_lat, to_do_long):
             icon=to_do_map_pin  # Use the red pin icon for to-do locations
         ).add_to(eq_map)
 
-        radius =  2000
+        #radius =  2000
 
         folium.Circle(
             location=[to_do_lat, to_do_long],
-            radius=radius,
+            radius=radius, # input is in m
             color='#ADD8E6',
             fill=True,
             fill_color='#ADD8E6',
-            fill_opacity=0.05
+            fill_opacity=0.30
         ).add_to(eq_map)
 
         for data in restaurant_data:
@@ -255,62 +255,30 @@ def generate_map(restaurant_data, to_do_lat, to_do_long):
         app.logger.exception(f"An error occurred: {e}")
         return f"An error occurred: {e}", 500
 
-# def generate_map(name_lat_long):
-#     try:
-#         # Find the center of all coordinates for auto-zoom
-#         if name_lat_long:
-#             latitudes = [lat for _, lat, _ in name_lat_long]
-#             longitudes = [lng for _, _, lng in name_lat_long]
-#             avg_lat = sum(latitudes) / len(latitudes)
-#             avg_lng = sum(longitudes) / len(longitudes)
-#             # change the lat long into the lat long of the place passing in
-#             eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
-#         else:
-#             eq_map = folium.Map(location=[0, 0], zoom_start=2)
-
-#         #marker_html='<i class="fa-solid fa-location-pin fa-bounce"></i>'
-#         # Create a custom icon with a color and size
-#         # custom_icon = folium.CustomIcon(
-#         #     html=marker_html,
-#         #     icon_size=(30, 30),  
-#         #     prefix='fa'  
-#         #     )
-
-#         # Loop through each restaurant data
-#         #count = 1
-#         for name, lat, lng in name_lat_long:
-#             folium.Marker(
-#                 location=[lat, lng],
-#                 popup=name,
-#                 #icon=custom_icon
-#                 # icon=folium.Icon(icon=count, prefix='fa')
-#             ).add_to(eq_map)
-#             #count +=1
-#         #change map style
-#         folium.TileLayer('openstreetmap').add_to(eq_map)
-
-#         #map_html = eq_map #.get_root().render()
-#         #return render_template("earthquake_map_display.html", map_html=map_html)
-#         return eq_map._repr_html_()  # Return the HTML representation of the map
-  
-    
-#     except Exception as e:
-#         app.logger.exception(f"An error occurred: {e}")
-#         return f"An error occurred: {e}", 500
-
-
 @app.route("/restaurant_map")
 def restaurant_map():
     return render_template("restaurant_map.html")
 
+def fetch_place_details(api_key, place_id):
+    """Fetch place details using place_id."""
+    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?place_id={place_id}&key={api_key}"
+    response = requests.get(geocode_url)
+    if response.status_code == 200:
+        data = response.json()
+        if data['status'] == 'OK':
+            result = data['results'][0]
+            lat = result['geometry']['location']['lat']
+            lng = result['geometry']['location']['lng']
+            # will give the street address not the name of the thing
+            #place_name = result['formatted_address']
+            return lat, lng
+    return None, None
+
 @app.route("/restaurants")
 #@limiter.limit("10 per minute")
+## WILL NEED TO PASS IN PLACE_ID and ADDRESS? or pass place_id as an argument?
 def show_restaurants():
     try: 
-        # Will need to take in place ID
-        # https://developers.google.com/maps/documentation/geocoding/requests-places-geocoding
-        # this will get the lat long to the search
-
         # will need to change the key name
         api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')  # Replace with your actual API key
         
@@ -318,60 +286,47 @@ def show_restaurants():
             app.logger.error("API key is empty")
             return jsonify({'error': 'API key is empty'}), 400
 
-        address = request.args.get('address', 'London')  # Get address from query parameter
-
-        if not address:
-            return 'No address provided', 400
-
-        serviceurl = 'https://maps.googleapis.com/maps/api/geocode/json?'
-
-        parms = {'address': address, 'key': api_key}
-        url = serviceurl + urllib.parse.urlencode(parms)
-
-        uh = urllib.request.urlopen(url)
-        data = uh.read().decode()
-        js = json.loads(data)
-
-        if 'status' not in js or js['status'] != 'OK':
-            return 'Failed to retrieve data', 500
+        #Example query: /restaurants?keyword=restaurant&address=New+York&price=3&dist=500&open=true
         
-        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter
-        #this will be removed when passed the lat long
-        
+        ##### is this how we are going to do it? #####
+        #default place_id is chinatown london
+        place_id = request.args.get('place_id', 'ChIJz-VvsdMEdkgR1lQfyxijRMw')  # Get place_id from query parameter
+        address = request.args.get('address', 'China Town')  # Get address from query parameter
+        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter       
         price = request.args.get('price', '2')
         dist = int(request.args.get('dist', 1000))
         open_q = request.args.get('open', '')
 
-        lat = js['results'][0]['geometry']['location']['lat']
-        lng = js['results'][0]['geometry']['location']['lng']
+        #details return to the Jinja
+        search_details = {
+            'place_id' : place_id,
+            'address': address,
+            'keyword': keyword_string,
+            'price': price,
+            'dist': dist,
+            'open' : open_q
+        }  
+        
+        lat, lng = fetch_place_details(api_key, place_id)
+        if not lat or not lng:
+            return 'Failed to retrieve place details', 500        
+
+        if not address:
+            return 'No address provided', 400
 
         keyword = '&keyword=' + keyword_string
         lat_long = 'location=' + str(lat) + ',' + str(lng)
         url_radius = '&radius=' + str(dist)
         url_price = '&maxprice=' + str(price) if price else ''
-        url_open_status = '&opennow=' + str(open_q) if open_q else ''
-        # need image of the place
-        # need place_id of each place
-        search_details = {
-            'address': address,
-            'keyword': keyword_string,
-            'price': price,
-            'dist': dist
-        }                                                       
+        url_open_status = '&opennow=' + str(open_q) if open_q else ''                                       
 
-        # will need url3! for the place details API
-        #https://developers.google.com/maps/documentation/places/web-service/details
-
-        url2 = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+        nearby_url = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
                 + lat_long + keyword + url_radius
                 + url_price + url_open_status + "&key=" + api_key)
-        
-        #/restaurants?keyword=restaurant&address=New+York&price=3&dist=500&open=true
 
-
-        buh = urllib.request.urlopen(url2)
-        data = buh.read().decode()
-        js = json.loads(data)
+        nearby_raw = urllib.request.urlopen(nearby_url)
+        nearby_data = nearby_raw.read().decode()
+        js = json.loads(nearby_data)
 
         if 'status' not in js or js['status'] != 'OK':
             return 'Failed to retrieve data', 500
@@ -399,10 +354,6 @@ def show_restaurants():
 
         # Step 3: Slice the sorted data to get only the top 15 entries
         top_restaurants_dict = dict(list(sorted_restaurants.items())[:15])
-
-        # Step 3: Fetch photo URLs for the top 15 restaurants
-        # to prevent accidental codes
-        # Fetch photo URLs for the top 15 restaurants
         
         # Step 4: Fetch additional details for the top 15 restaurants
         counter = 0
@@ -412,16 +363,11 @@ def show_restaurants():
             if counter >= max_requests:
                 break
 
-            place_id = details[6]  # Assuming place_id is at index 6
+            place_id = details[6]  # place_id is at index 6
             if place_id:
                 place_details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_phone_number,website,editorial_summary&key=" + api_key
                 response = requests.get(place_details_url)
                 place_details_data = response.json()
-                # with open('place_details_response.json', 'w') as json_file:
-                #         json.dump(place_details_data, json_file, indent=4)
-
-                #      # Print the JSON response (optional)
-                # print(json.dumps(place_details_data, indent=4))
 
                 if place_details_data.get('status') == 'OK':                    
                     result = place_details_data.get('result', {})
@@ -449,7 +395,6 @@ def show_restaurants():
         return jsonify({'error': str(e)}), 500
 
      # Prepare data for map generation
-    #name_lat_long = [(name, details[3], details[4]) for name, details in top_restaurants_dict.items()]
     restaurant_data = [
     {
         'name': name,
@@ -461,83 +406,9 @@ def show_restaurants():
     }
     for name, details in top_restaurants_dict.items()
     ]
-    #session['map_data'] = name_lat_long
-
-    # Generate map HTML here (or call a function that generates it)
-    #51.5136° N, 0.1365°
-    to_do_lat = 51.512980
-    to_do_long = -0.133680
-    map_html = generate_map(restaurant_data, to_do_lat, to_do_long)  # assuming generate_map_html is a function that returns HTML
+    
+    # Generate map HTML using to_do lat and logn
+    map_html = generate_map(restaurant_data, lat, lng, dist) 
 
     return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_html=map_html, search_details=search_details)
-    #return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
-
-    # return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
     
-# @app.route("/generate_earthquake_map")
-# def generate_earthquake_map():
-#     try:
-#         # URL endpoint for the earthquake data API
-#         endpoint = "https://earthquake.usgs.gov/fdsnws/event/1/query?"
-
-#         # Parameters for the API request
-#         ps = {
-#             "format": "geojson",  # Requesting data in GeoJSON format
-#             "starttime": "2023-11-20",  # Start date for the earthquake data
-#             "endtime": "2023-11-27",  # End date for the earthquake data
-#             "minmagnitude": 4.5  # Minimum magnitude of earthquakes to retrieve
-#         }
-
-#         # Make an API request and get the response
-#         response = requests.get(endpoint, params=ps)
-
-#         # Convert the response text (JSON) into a Python dictionary
-#         data_dict = json.loads(response.text)
-
-#         # List to store latitude, longitude, and magnitude of each earthquake
-#         lat_long_mag = []
-
-#         # Loop through each earthquake in the data
-#         for eq in data_dict['features']:
-#             # Extract latitude, longitude, and magnitude
-#             latitude = float(eq['geometry']['coordinates'][0])
-#             longitude = float(eq['geometry']['coordinates'][1])
-#             magnitude = float(eq['properties']['mag'])
-
-#             # Append the data to the list
-#             lat_long_mag.append([latitude, longitude, magnitude])
-
-#         # Print the extracted data and its length
-#         #print(lat_long_mag)
-#         #print(len(lat_long_mag))
-
-#         # Create a base map centered around the Pacific Ocean
-#         eq_map = folium.Map(location=[0, -180], zoom_start=2)
-
-#         # Define a function to get color based on earthquake magnitude
-#         def get_color(magnitude):
-#             # Access the colormap using the new method
-#             colormap = matplotlib.colormaps['RdYlGn_r']  # Red-Yellow-Green reversed colormap
-#             normed_value = (magnitude - 6.0) / 4  # Normalize the magnitude value for color mapping
-#             rgba = colormap(normed_value)  # Get RGBA value from colormap
-#             return matplotlib.colors.rgb2hex(rgba)  # Convert RGBA to hexadecimal color
-
-#         # Loop through each point in lat_long_mag
-#         for point in lat_long_mag:
-#             folium.CircleMarker(
-#                 location=[point[1], point[0]],  # Set location (latitude, longitude)
-#                 popup=f'Mag: {point[2]}',  # Popup text showing the magnitude
-#                 radius=(point[2] ** 3) / 15.0,  # Radius of the circle, scaled by magnitude
-#                 color=get_color(point[2]),  # Border color of the circle
-#                 fill=True,  # Fill the circle
-#                 fill_color=get_color(point[2]),  # Fill color
-#                 fill_opacity=0.7  # Fill opacity
-#             ).add_to(eq_map)
-
-#         # Instead of saving the map, embed it directly in the template
-#         map_html = eq_map.get_root().render()
-#         # Pass the HTML string to the template and use the | safe filter in Jinja2
-#         return render_template("earthquake_map_display.html", map_html=map_html)  # Pass the HTML string to the template and use the | safe filter in Jinja2
-#     except Exception as e:
-#         app.logger.exception(f"An error occurred: {e}")
-#         return f"An error occurred: {e}, 500"
