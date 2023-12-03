@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', filename='dist/css/output.css') }}" rel="stylesheet">
-    <title>Restaurant Places</title>
+    <title>Explore Nearby Eateries</title>
     <style>
         .star-rating {
             display: inline-block;
@@ -16,46 +16,76 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        .title-style {
+            font-family: 'Nunito', sans-serif; /* This is a suggestion, replace with the actual font from booking.com if known */
+            color: #333333; /* Adjust the color to match the style on booking.com */
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
     </style>
 </head>
-<body class="flex flex-col md:flex-row">        
+<body class="flex flex-col md:flex-row mx-auto max-w-6xl">        
     <!-- Restaurants Container -->
-    <div id="restaurants-container" class="flex-grow space-y-4 p-4 md:w-3/5">
-        <h1 class="text-3xl font-bold underline text-left my-5">Restaurant Places</h1>
-        <!-- Map View Button -->
-        <button onclick="showMapView()" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">
-            Map View
-        </button>
-        <!-- Distance Slider -->
-        <div class="flex items-center">
-            <label for="distance" class="block text-sm font-medium text-gray-700 mr-4">
-            Distance
-            </label>
-            <input type="range" id="distance" name="distance" min="0" max="100" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
-            <div id="distanceValue" class="text-sm font-medium text-gray-700 ml-4">
-            10 miles
+    <div id="restaurants-container" class="flex-grow space-y-4 p-4 md:w-4/5 mx-auto">
+        <h1 class="title-style my-5">{{ search_details['keyword']|capitalize }} near to {{ search_details['address'] }}</h1>
+        <!-- Filter Container -->
+        <div class="flex flex-wrap items-center mb-4 bg-white p-3 rounded-lg shadow">
+            <!-- Map View Button -->
+            <button onclick="showMapView()" class="bg-blue-500 text-white px-4 py-2 rounded mr-4 transition duration-300 ease-in-out hover:bg-blue-600">
+                Map View
+            </button>
+            <!-- Distance Slider -->
+            <div class="flex items-center mr-4">
+                <label for="distance" class="block text-sm font-medium text-gray-700 mr-2">
+                Distance
+                </label>
+                <input type="range" id="distance" name="distance" min="0" max="15" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer transition duration-300 ease-in-out">
+                <div id="distanceValue" class="text-sm font-medium text-gray-700 ml-2">
+                2 kilometers
+                </div>
+            </div>        
+
+            <!-- Price Indicator -->
+            <div id="priceIndicator" class="flex mr-4">
+                {% for i in range(4) %}
+                <span onclick="togglePrice({{ i+1 }})" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">&#163;</span>
+                {% endfor %}
             </div>
+
+            <!-- Type Indicator -->
+            <div id="typeIndicator" class="flex mr-4">
+                <span onclick="toggleType('cafe')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Cafe</span>
+                <span onclick="toggleType('pub')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Pub</span>
+                <span onclick="toggleType('restaurant')" class="cursor-pointer px-1 text-gray-400 hover:text-blue-600 transition duration-300 ease-in-out">Restaurant</span>
+            </div>
+
+            <!-- Go Button -->
+            <button onclick="submitRequest()" class="px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 transition duration-300 ease-in-out">Go</button>
         </div>
+        
         <!-- Restaurants Listing -->
         {% for name, details in restaurants.items() %}
-            <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden">
-                <div class="flex items-center h-32">
+            <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden mx-2">
+                <!-- Adjustments to image container for equal spacing -->
+                <div class="md:w-48 flex items-center justify-center p-4">
                     {% if details[5] %}        
-                    <img class="w-full md:w-48 object-cover rounded-lg" src="{{ details[5] }}" alt="Photo of {{ name }}" style="max-height: 100%;">
+                    <img class="object-cover rounded-lg" src="{{ details[5] }}" alt="Photo of {{ name }}" style="max-height: 200px;">
                     {% endif %}
                 </div>
-                <div class="p-4 flex flex-col justify-between">
+                <div class="p-4 flex flex-col justify-between flex-grow">
                     <div>
                         <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
                             <a href="{{ details[2] }}" target="_blank">{{ name }}</a>
                         </div>
-                        
                         <div class="star-rating" style="--rating: {{ details[0]|default(0) }};"></div>
                         <p class="text-gray-500 mt-2">{{ details[8]|default('Description not available') }}</p>
                     </div>
-                    <div class="flex justify-between items-center mt-4">
-                        <span class="text-lg font-semibold text-blue-800">{{ details[0]|default('No rating') }}</span>
-                        <span class="text-xs text-gray-600">{{ details[1]|default('0') }} reviews</span>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-lg font-semibold text-blue-800">{{ details[0]|default('No rating') }}/5</span>
+                            <span class="text-xs text-gray-600">{{ details[1]|default('0') }} reviews</span>
+                        </div>
                         <span class="text-xs text-gray-600">{{ details[7]|default('Phone number not available') }}</span>
                     </div>
                 </div>
@@ -88,12 +118,64 @@
         const distanceSlider = document.getElementById('distance');
         const distanceValue = document.getElementById('distanceValue');
         distanceSlider.oninput = function() {
-            distanceValue.textContent = this.value + ' miles';
+            distanceValue.textContent = this.value + ' kilometers';
         }
-    </script>
-    
-        
 
+        // Function to handle price selection
+        function togglePrice(level) {
+            let priceSpans = document.querySelectorAll('#priceIndicator span');
+            for (let i = 0; i < priceSpans.length; i++) {
+                if (i < level) {
+                    priceSpans[i].classList.add('text-blue-600');
+                    priceSpans[i].classList.remove('text-gray-400');
+                } else {
+                    priceSpans[i].classList.remove('text-blue-600');
+                    priceSpans[i].classList.add('text-gray-400');
+                }
+            }
+        }
+
+        // Function to handle type selection
+        let selectedType = null;
+        function toggleType(type) {
+            console.log('Toggling type:', type); // Debugging log
+            if (selectedType === type) {
+                selectedType = null;
+            } else {
+                selectedType = type;
+            }
+            document.querySelectorAll('#typeIndicator span').forEach(span => {
+                const isType = span.textContent.toLowerCase() === type;
+                span.classList.toggle('text-blue-600', isType && selectedType === type);
+                console.log('Is type:', isType, ' | Text:', span.textContent); // Debugging log
+            });
+        }
+
+        // Placeholder function for Go button
+        function submitRequest() {
+            // Retrieve current values from URL
+            var currentParams = new URLSearchParams(window.location.search);
+            var currentAddress = currentParams.get('address') || 'soho london'; // Replace 'default_address' with your actual default
+            var currentPrice = currentParams.get('price') || '2'; // Default price level
+            var currentKeyword = currentParams.get('keyword') || 'restaurant'; // Default keyword
+
+            // Getting new values from user selection
+            var distanceInKm = document.getElementById('distance').value;
+            var distanceInMeters = distanceInKm * 1000; // Converting km to meters
+
+            var selectedPriceLevel = document.querySelectorAll('#priceIndicator .text-blue-600').length || currentPrice;
+            var selectedType = document.querySelector('#typeIndicator .text-blue-600')?.textContent.toLowerCase() || currentKeyword;
+
+            // Updating query string with new or default values
+            currentParams.set('dist', distanceInMeters);
+            currentParams.set('price', selectedPriceLevel);
+            currentParams.set('keyword', selectedType);
+            currentParams.set('address', currentAddress); // Include the address in the query string
+
+            // Refreshing the page with updated parameters
+            window.location.href = '/restaurants?' + currentParams.toString();
+        }
+
+    </script>
 </body>
 </html>
-

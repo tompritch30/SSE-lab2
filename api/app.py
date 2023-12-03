@@ -189,28 +189,39 @@ def process_query(word):
     else:
         return "Unknown"
 
-def generate_map(restaurant_data):
+def generate_map(restaurant_data, to_do_lat, to_do_long):
     try:
         # Center the map by calculating the average latitude and longitude
         latitudes = [data['lat'] for data in restaurant_data]
         longitudes = [data['lng'] for data in restaurant_data]
-        avg_lat = sum(latitudes) / len(latitudes)
-        avg_lng = sum(longitudes) / len(longitudes)
-        eq_map = folium.Map(location=[avg_lat, avg_lng], zoom_start=14)
+        #avg_lat = sum(latitudes) / len(latitudes)
+        #avg_lng = sum(longitudes) / len(longitudes)
+        eq_map = folium.Map(location=[to_do_lat, to_do_long], zoom_start=14)
+
+        # Define two different icons for markers
+        to_do_map_pin = folium.Icon(icon='map-pin', prefix='fa', color='red')
+                    
+        # Create and add the to-do marker to the map
+        folium.Marker(
+            location=[to_do_lat, to_do_long],
+            # tooltip can be added if needed
+            # popup can be added if needed
+            icon=to_do_map_pin  # Use the red pin icon for to-do locations
+        ).add_to(eq_map)
+
+        radius =  2000
+
+        folium.Circle(
+            location=[to_do_lat, to_do_long],
+            radius=radius,
+            color='#ADD8E6',
+            fill=True,
+            fill_color='#ADD8E6',
+            fill_opacity=0.05
+        ).add_to(eq_map)
 
         for data in restaurant_data:
             # Create the HTML for the popup
-            # popup_html = f"""
-            # <div class='p-4 max-w-sm rounded overflow-hidden shadow-lg'>
-            # <img class='w-full' src='{data['image_url']}' alt='Restaurant Image'>
-            # <div class='px-6 py-4'>
-            #     <div class='font-bold text-xl mb-2'><a href='{data['website_url']}' target='_blank'>{data['name']}</a></div>
-            # </div>            
-            # </div>
-            # """
-            # iframe = folium.IFrame(popup_html, width=150, height=200)
-            # popup = folium.Popup(iframe, max_width=150)
-
             popup_html = f"""
                 <div style='min-width: 200px; max-width: 250px; padding: 1rem; background-color: white; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);'>
                     <img style='width: 100%; height: auto; border-radius: 0.25rem;' src='{data['image_url']}' alt='Restaurant Image'>
@@ -225,13 +236,17 @@ def generate_map(restaurant_data):
                 </div>
             """
             iframe = folium.IFrame(popup_html, width=150, height=200)
-            popup = folium.Popup(iframe, max_width=150)
+            popup = folium.Popup(iframe, max_width=150)           
 
+            #map_pin = folium.Icon(icon='location-dot', prefix='fa', color='blue')
+            map_pin = folium.Icon(icon='location-dot', prefix='fa', color='blue')
+            
             # Create and add a marker to the map
             folium.Marker(
                 location=[data['lat'], data['lng']],
                 tooltip=data['name'],
-                popup=folium.Popup(popup_html, max_width=300)
+                popup=folium.Popup(popup_html, max_width=300),
+                icon=map_pin
             ).add_to(eq_map)
         
         return eq_map._repr_html_()  # Return the HTML representation of the map
@@ -337,6 +352,12 @@ def show_restaurants():
         url_open_status = '&opennow=' + str(open_q) if open_q else ''
         # need image of the place
         # need place_id of each place
+        search_details = {
+            'address': address,
+            'keyword': keyword_string,
+            'price': price,
+            'dist': dist
+        }                                                       
 
         # will need url3! for the place details API
         #https://developers.google.com/maps/documentation/places/web-service/details
@@ -416,10 +437,7 @@ def show_restaurants():
                     top_restaurants_dict[name] = updated_details
 
             counter += 1
-
-        
-
-        
+    
     except urllib.error.URLError as e:
         app.logger.exception("URL Error occurred")
         return jsonify({'error': str(e)}), 500
@@ -446,9 +464,12 @@ def show_restaurants():
     #session['map_data'] = name_lat_long
 
     # Generate map HTML here (or call a function that generates it)
-    map_html = generate_map(restaurant_data)  # assuming generate_map_html is a function that returns HTML
+    #51.5136° N, 0.1365°
+    to_do_lat = 51.512980
+    to_do_long = -0.133680
+    map_html = generate_map(restaurant_data, to_do_lat, to_do_long)  # assuming generate_map_html is a function that returns HTML
 
-    return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_html=map_html)
+    return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_html=map_html, search_details=search_details)
     #return render_template("restaurant_map.html", restaurants=top_restaurants_dict, map_data=name_lat_long)
 
     # return render_template("restaurant_map.html", restaurants=top_restaurants_dict)
