@@ -151,7 +151,7 @@
         function submitRequest() {
             // Retrieve current values from URL
             var currentParams = new URLSearchParams(window.location.search);
-            var currentAddress = currentParams.get('address') || 'soho london'; // Replace 'default_address' with your actual default
+            var currentAddress = currentParams.get('address') || 'soho london'; 
             var currentPrice = currentParams.get('price') || '2'; // Default price level
             var currentKeyword = currentParams.get('keyword') || 'restaurant'; // Default keyword
 
@@ -167,6 +167,7 @@
             currentParams.set('price', selectedPriceLevel);
             currentParams.set('keyword', selectedType);
             currentParams.set('address', currentAddress); // Include the address in the query string
+            // LIKELY NEED TO UPDATE TO USE THE PLACE_ID!!
 
             // Refreshing the page with updated parameters
             window.location.href = '/restaurants?' + currentParams.toString();
