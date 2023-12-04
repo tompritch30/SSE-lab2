@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ url_for('static', filename='dist/css/output.css') }}" rel="stylesheet">
+    <!-- For the Heart icon -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <title>Explore Nearby Eateries</title>
     <style>
         .star-rating {
@@ -22,7 +24,7 @@
             font-size: 2rem;
             font-weight: 700;
             line-height: 1.2;
-        }
+        }        
     </style>
 </head>
 <body class="flex flex-col md:flex-row mx-auto max-w-6xl">        
@@ -68,21 +70,25 @@
         
         <!-- Restaurants Listing -->
         {% for name, details in restaurants.items() %}
-            <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden mx-2">
-                <!-- Adjustments to image container for equal spacing -->
+            <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden mx-2 relative">
+                <!-- Image container -->
                 <div class="md:w-48 flex items-center justify-center p-4">
                     {% if details[5] %}        
                     <img class="object-cover rounded-lg" src="{{ details[5] }}" alt="Photo of {{ name }}" style="max-height: 200px;">
                     {% endif %}
                 </div>
+                <!-- Restaurant details -->
                 <div class="p-4 flex flex-col justify-between flex-grow">
                     <div>
+                        <!-- Restaurant Name -->
                         <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
                             <a href="{{ details[2] }}" target="_blank">{{ name }}</a>
                         </div>
+                        <!-- Star Rating -->
                         <div class="star-rating" style="--rating: {{ details[0]|default(0) }};"></div>
                         <p class="text-gray-500 mt-2">{{ details[8]|default('Description not available') }}</p>
                     </div>
+                    <!-- Ratings and Reviews -->
                     <div class="flex justify-between items-end">
                         <div>
                             <span class="text-lg font-semibold text-blue-800">{{ details[0]|default('No rating') }}/5</span>
@@ -91,6 +97,8 @@
                         <span class="text-xs text-gray-600">{{ details[7]|default('Phone number not available') }}</span>
                     </div>
                 </div>
+                <!-- Heart Icon -->
+                <i id="heart-{{ details[6] }}" class="far fa-heart fa-beat absolute top-4 right-4 text-red-500 text-2xl cursor-pointer" onclick="toggleHeart('{{ details[6] }}')"></i>
             </div>
         {% else %}
             <p>No restaurant data available.</p>
@@ -148,12 +156,24 @@
         });           
         }
 
+        function toggleHeart(place_id) {
+            var heartIcon = document.getElementById('heart-' + place_id);
+            if (heartIcon.classList.contains('far')) {
+                heartIcon.classList.remove('far');
+                heartIcon.classList.add('fas');
+            } else {
+                heartIcon.classList.add('far');
+                heartIcon.classList.remove('fas');
+            }
+        }
+
         function submitRequest() {
             // Retrieve current values from URL
             var currentParams = new URLSearchParams(window.location.search);
             var currentAddress = currentParams.get('address') || 'soho london'; 
             var currentPrice = currentParams.get('price') || '2'; // Default price level
             var currentKeyword = currentParams.get('keyword') || 'restaurant'; // Default keyword
+            
 
             // Getting new values from user selection
             var distanceInKm = document.getElementById('distance').value;
@@ -166,8 +186,7 @@
             currentParams.set('dist', distanceInMeters);
             currentParams.set('price', selectedPriceLevel);
             currentParams.set('keyword', selectedType);
-            currentParams.set('address', currentAddress); // Include the address in the query string
-            // LIKELY NEED TO UPDATE TO USE THE PLACE_ID!!
+            currentParams.set('address', currentAddress); // Include the address in the query string for title
 
             // Refreshing the page with updated parameters
             window.location.href = '/restaurants?' + currentParams.toString();

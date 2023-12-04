@@ -189,6 +189,10 @@ def process_query(word):
     else:
         return "Unknown"
 
+@app.route("/restaurant_map")
+def restaurant_map():
+    return render_template("restaurant_map.html")
+
 def generate_map(restaurant_data, to_do_lat, to_do_long, radius):
     try:
         # Center the map by calculating the average latitude and longitude
@@ -213,7 +217,7 @@ def generate_map(restaurant_data, to_do_lat, to_do_long, radius):
 
         folium.Circle(
             location=[to_do_lat, to_do_long],
-            radius=radius, # input is in m
+            radius=radius+200, # input is in m
             color='#ADD8E6',
             fill=True,
             fill_color='#ADD8E6',
@@ -255,10 +259,6 @@ def generate_map(restaurant_data, to_do_lat, to_do_long, radius):
         app.logger.exception(f"An error occurred: {e}")
         return f"An error occurred: {e}", 500
 
-@app.route("/restaurant_map")
-def restaurant_map():
-    return render_template("restaurant_map.html")
-
 def fetch_place_details(api_key, place_id):
     """Fetch place details using place_id."""
     geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?place_id={place_id}&key={api_key}"
@@ -274,9 +274,88 @@ def fetch_place_details(api_key, place_id):
             return lat, lng
     return None, None
 
+def parse_request_parameters():
+    place_id = request.args.get('place_id', 'ChIJz-VvsdMEdkgR1lQfyxijRMw')  # Default to Chinatown London
+    address = request.args.get('address', 'Default: China Town')
+    keyword_string = request.args.get('keyword', 'restaurant')       
+    price = request.args.get('price', '2')
+    dist = int(request.args.get('dist', 1000))
+    open_q = request.args.get('open', '')
+
+    return place_id, address, keyword_string, price, dist, open_q
+
+def search_nearby_restaurants(api_key, lat, lng, keyword_string, dist, price, open_q):
+    keyword = '&keyword=' + keyword_string
+    lat_long = 'location=' + str(lat) + ',' + str(lng)
+    url_radius = '&radius=' + str(dist)
+    url_price = '&maxprice=' + str(price) if price else ''
+    url_open_status = '&opennow=' + str(open_q) if open_q else ''                                       
+
+    nearby_url = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+                  + lat_long + keyword + url_radius
+                  + url_price + url_open_status + "&key=" + api_key)
+
+    nearby_raw = urllib.request.urlopen(nearby_url)
+    nearby_data = nearby_raw.read().decode()
+    return json.loads(nearby_data)
+
+def process_restaurant_data(nearby_data):
+    all_restaurants = {}        
+    for result in nearby_data['results']:
+        name = result['name']
+        rating = result.get('rating', 'No rating')
+        rating_count = result.get('user_ratings_total', 'No rating count')
+        encoded_name = urllib.parse.quote(name)  # URL encode the name
+        search_link = "https://www.google.com/search?q=" + encoded_name
+        rest_lat = result.get('geometry', {}).get('location', {}).get('lat', 0)
+        rest_long = result.get('geometry', {}).get('location', {}).get('lng', 0)
+
+        photo_reference = result.get('photos', [{}])[0].get('photo_reference', None)
+        place_id = result.get('place_id', None)
+        
+        # Add to dictionary only if rating and rating_count are not default values
+        if rating != 'No rating' and rating_count != 'No rating count':
+            all_restaurants[name] = (rating, rating_count, search_link, rest_lat, rest_long, photo_reference, place_id)
+
+    return all_restaurants
+
+def sort_and_slice_restaurants(all_restaurants, top_n=15):
+    sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
+    return dict(list(sorted_restaurants.items())[:top_n])
+
+def fetch_additional_details(api_key, top_restaurants_dict, max_requests=15):
+    counter = 0
+    for name, details in top_restaurants_dict.items():
+        if counter >= max_requests:
+            break
+        
+        place_id = details[6]  # place_id is at index 6
+        if place_id:
+            place_details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_phone_number,website,editorial_summary&key=" + api_key
+            response = requests.get(place_details_url)
+            place_details_data = response.json()
+
+            if place_details_data.get('status') == 'OK':                    
+                result = place_details_data.get('result', {})
+                formatted_phone_number = result.get('formatted_phone_number', 'Phone number not found')
+                website = result.get('website', details[2])
+                editorial_summary_overview = result.get('editorial_summary', {}).get('overview', 'Editorial summary not found')
+                
+                photo_reference = details[5]  # Assuming photo_reference is at index 5
+                photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key=" + api_key if photo_reference else 'Image not found'
+
+                updated_details = (details[0], details[1], website, details[3], details[4], photo_url, details[6], formatted_phone_number, editorial_summary_overview)
+            
+                top_restaurants_dict[name] = updated_details
+
+        counter += 1
+    return top_restaurants_dict
+
 @app.route("/restaurants")
 #@limiter.limit("10 per minute")
 ## WILL NEED TO PASS IN PLACE_ID and ADDRESS? or pass place_id as an argument?
+#Example query: /restaurants?places_id=Cdfsdgsdfsdf&address=New+York&keyword=restaurant&price=3&dist=500&open=true
+        
 def show_restaurants():
     try: 
         # will need to change the key name
@@ -285,17 +364,10 @@ def show_restaurants():
         if not api_key:
             app.logger.error("API key is empty")
             return jsonify({'error': 'API key is empty'}), 400
-
-        #Example query: /restaurants?keyword=restaurant&address=New+York&price=3&dist=500&open=true
         
         ##### is this how we are going to do it? #####
-        #default place_id is chinatown london
-        place_id = request.args.get('place_id', 'ChIJz-VvsdMEdkgR1lQfyxijRMw')  # Get place_id from query parameter
-        address = request.args.get('address', 'China Town')  # Get address from query parameter
-        keyword_string = request.args.get('keyword', 'restaurant')  # Get address from query parameter       
-        price = request.args.get('price', '2')
-        dist = int(request.args.get('dist', 1000))
-        open_q = request.args.get('open', '')
+        # Parse request parameters
+        place_id, address, keyword_string, price, dist, open_q = parse_request_parameters()
 
         #details return to the Jinja
         search_details = {
@@ -311,78 +383,17 @@ def show_restaurants():
         if not lat or not lng:
             return 'Failed to retrieve place details', 500        
 
-        if not address:
-            return 'No address provided', 400
-
-        keyword = '&keyword=' + keyword_string
-        lat_long = 'location=' + str(lat) + ',' + str(lng)
-        url_radius = '&radius=' + str(dist)
-        url_price = '&maxprice=' + str(price) if price else ''
-        url_open_status = '&opennow=' + str(open_q) if open_q else ''                                       
-
-        nearby_url = ("https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-                + lat_long + keyword + url_radius
-                + url_price + url_open_status + "&key=" + api_key)
-
-        nearby_raw = urllib.request.urlopen(nearby_url)
-        nearby_data = nearby_raw.read().decode()
-        js = json.loads(nearby_data)
-
-        if 'status' not in js or js['status'] != 'OK':
+       # Search nearby restaurants
+        nearby_data = search_nearby_restaurants(api_key, lat, lng, keyword_string, dist, price, open_q)
+        if 'status' not in nearby_data or nearby_data['status'] != 'OK':
             return 'Failed to retrieve data', 500
 
-        # Step 1: Fetch all restaurant data
-        all_restaurants = {}        
-        for result in js['results']:
-            name = result['name']
-            rating = result.get('rating', 'No rating')
-            rating_count = result.get('user_ratings_total', 'No rating count')
-            encoded_name = urllib.parse.quote(name)  # URL encode the name
-            search_link = "https://www.google.com/search?q=" + encoded_name
-            rest_lat = result.get('geometry', {}).get('location', {}).get('lat', 0)
-            rest_long = result.get('geometry', {}).get('location', {}).get('lng', 0)
+        # Process and sort restaurants
+        all_restaurants = process_restaurant_data(nearby_data)  # Assuming this function exists
+        top_restaurants_dict = sort_and_slice_restaurants(all_restaurants)
 
-            photo_reference = result.get('photos', [{}])[0].get('photo_reference', None)
-            place_id = result.get('place_id', None)
-            
-            # Add to dictionary only if rating and rating_count are not default values
-            if rating != 'No rating' and rating_count != 'No rating count':
-                all_restaurants[name] = (rating, rating_count, search_link, rest_lat, rest_long, photo_reference, place_id)
-
-        # Step 2: Sort the data by the number of reviews
-        sorted_restaurants = dict(sorted(all_restaurants.items(), key=lambda item: item[1][1], reverse=True))
-
-        # Step 3: Slice the sorted data to get only the top 15 entries
-        top_restaurants_dict = dict(list(sorted_restaurants.items())[:15])
-        
-        # Step 4: Fetch additional details for the top 15 restaurants
-        counter = 0
-        max_requests = 15
-
-        for name, details in top_restaurants_dict.items():
-            if counter >= max_requests:
-                break
-
-            place_id = details[6]  # place_id is at index 6
-            if place_id:
-                place_details_url = f"https://maps.googleapis.com/maps/api/place/details/json?place_id={place_id}&fields=name,formatted_phone_number,website,editorial_summary&key=" + api_key
-                response = requests.get(place_details_url)
-                place_details_data = response.json()
-
-                if place_details_data.get('status') == 'OK':                    
-                    result = place_details_data.get('result', {})
-                    formatted_phone_number = result.get('formatted_phone_number', 'Phone number not found')
-                    website = result.get('website', details[2])
-                    editorial_summary_overview = result.get('editorial_summary', {}).get('overview', 'Editorial summary not found')
-                    
-                    photo_reference = details[5]  # Assuming photo_reference is at index 5
-                    photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key=" + api_key if photo_reference else 'Image not found'
-
-                    updated_details = (details[0], details[1], website, details[3], details[4], photo_url, details[6], formatted_phone_number, editorial_summary_overview)
-                
-                    top_restaurants_dict[name] = updated_details
-
-            counter += 1
+        # Fetch additional details
+        top_restaurants_dict = fetch_additional_details(api_key, top_restaurants_dict)            
     
     except urllib.error.URLError as e:
         app.logger.exception("URL Error occurred")
